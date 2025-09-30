@@ -8,6 +8,7 @@ project ("astd_tests" VERSION 1.0.0 LANGUAGES C CXX)
 # Set project variables
 
 set(TESTS_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
+set(ASTD_LIB_DIRECTORY ${PROJECT_SOURCE_DIR}/std)
 set(ANGELSCRIPT_LIB_DIRECTORY ${PROJECT_SOURCE_DIR}/angelscript)
 
 # Set CMake variables
@@ -50,10 +51,29 @@ include_directories(
     ${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on
 )
 
-# Create library with all code
+# Create AngelScript library with all code
 
 add_subdirectory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/angelscript/projects/cmake")
 set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} angelscript)
+
+aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptbuilder"   ANGELSCRIPT_ADDON_SOURCES)
+aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptstdstring" ANGELSCRIPT_ADDON_SOURCES)
+aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptarray"     ANGELSCRIPT_ADDON_SOURCES)
+
+# Create AngelScript Standard Library
+
+aux_source_directory("${ASTD_LIB_DIRECTORY}/memory"      ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/algorithm"   ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/coroutines"  ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/chrono"      ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/ratio"       ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/format"      ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/format/fmt"  ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/scan"        ASTD_LIB_SOURCES)
+aux_source_directory("${ASTD_LIB_DIRECTORY}/scan/scn"    ASTD_LIB_SOURCES)
+
+add_library(angelscript-std STATIC  ${ASTD_LIB_SOURCES})
+set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} angelscript-std)
 
 # Create executable Tests
 
@@ -65,6 +85,8 @@ foreach(test_source_file ${TESTS_SOURCES})
     get_filename_component(test_name ${test_source_file} NAME_WE)
     add_executable(${test_name} 
         ${test_source_file}
+        ${ANGELSCRIPT_ADDON_SOURCES}
+        ${ASTD_LIB_SOURCES}
     )
     set_property(TARGET ${test_name} PROPERTY WORKING_DIRECTORY "${TESTS_DIRECTORY}/bin")
     set_property(TARGET ${test_name} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${TESTS_DIRECTORY}/bin")
