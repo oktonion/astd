@@ -4,6 +4,7 @@ cmake_minimum_required (VERSION 3.15)
 
 # Set the project name
 project ("astd_tests" VERSION 1.0.0 LANGUAGES C CXX)
+set(CMAKE_ENABLE_EXPORTS true)
 
 # Set project variables
 
@@ -53,7 +54,7 @@ include_directories(
 # Create library with all code
 
 set(ANGELSCRIPT_LIBRARY_NAME ascript)
-add_subdirectory("${PROJECT_SOURCE_DIR}/sdk/angelscript/projects/cmake")
+add_subdirectory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/angelscript/projects/cmake")
 set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} ascript)
 
 # Create executable Tests
@@ -69,7 +70,7 @@ foreach(test_source_file ${TESTS_SOURCES})
     )
     set_property(TARGET ${test_name} PROPERTY WORKING_DIRECTORY "${TESTS_DIRECTORY}/bin")
     set_property(TARGET ${test_name} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${TESTS_DIRECTORY}/bin")
-    target_link_libraries(${test_name} ${TESTS_LINK_LIBRARIES} )
+    target_link_libraries(${test_name} ${TESTS_LINK_LIBRARIES})
 endforeach(test_source_file ${TEST_SOURCES})
 
 string(REPLACE ";" "," SUCCESS_TESTS "${TESTS_SOURCES}")
