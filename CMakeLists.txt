@@ -4,7 +4,6 @@ cmake_minimum_required (VERSION 3.15)
 
 # Set the project name
 project ("astd_tests" VERSION 1.0.0 LANGUAGES C CXX)
-set(CMAKE_ENABLE_EXPORTS true)
 
 # Set project variables
 
@@ -53,9 +52,8 @@ include_directories(
 
 # Create library with all code
 
-set(ANGELSCRIPT_LIBRARY_NAME ascript)
 add_subdirectory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/angelscript/projects/cmake")
-set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} ascript)
+set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} angelscript)
 
 # Create executable Tests
 
