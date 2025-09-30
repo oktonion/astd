@@ -46,7 +46,7 @@
                 }                                                                                                                               \
                 else                                                                                                                            \
                 {                                                                                                                               \
-                    DOCTEST_FAIL(msg->section << " (" << msg->row << ", " << msg->col << ") : " << msg->message);                               \
+                    DOCTEST_FAIL_CHECK(msg->section << " (" << msg->row << ", " << msg->col << ") : " << msg->message);                         \
                 }                                                                                                                               \
             }                                                                                                                                   \
         } EngineRAII
