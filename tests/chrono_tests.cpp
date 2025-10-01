@@ -38,19 +38,19 @@ TEST_CASE("astd: chrono")
     SERVICE_REQUEST_CONTEXT_RAII(script_context);
 
     {
-        asIScriptEngine* engine = script_context.GetEngine();
-        RegisterStdString(engine);
+        asIScriptEngine* asIScriptEngine = script_context.GetEngine();
+        RegisterStdString(asIScriptEngine);
         {
-            RegisterScriptMath(engine);
-            script_context.GetEngine()->SetDefaultNamespace("std");
-            RegisterScriptMath(engine);
-            script_context.GetEngine()->SetDefaultNamespace("");
+            RegisterScriptMath(asIScriptEngine);
+            asIScriptEngine->SetDefaultNamespace("std");
+            RegisterScriptMath(asIScriptEngine);
+            asIScriptEngine->SetDefaultNamespace("");
         }
 
-        RegisterScriptFmt(engine);
-        RegisterScriptStd_Coroutines(engine);
-        RegisterScriptStd_Ratio(engine);
-        RegisterScriptStd_Chrono(engine);
+        RegisterScriptFmt(asIScriptEngine);
+        RegisterScriptStd_Coroutines(asIScriptEngine);
+        RegisterScriptStd_Ratio(asIScriptEngine);
+        RegisterScriptStd_Chrono(asIScriptEngine);
     }
 
     SUBCASE("importing function 'int chrono_test()'")

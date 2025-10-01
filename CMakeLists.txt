@@ -59,7 +59,7 @@ set(TESTS_LINK_LIBRARIES ${TESTS_LINK_LIBRARIES} angelscript)
 aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptbuilder"   ANGELSCRIPT_ADDON_SOURCES)
 aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptstdstring" ANGELSCRIPT_ADDON_SOURCES)
 aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptarray"     ANGELSCRIPT_ADDON_SOURCES)
-aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptmath"     ANGELSCRIPT_ADDON_SOURCES)
+aux_source_directory("${ANGELSCRIPT_LIB_DIRECTORY}/sdk/add_on/scriptmath"      ANGELSCRIPT_ADDON_SOURCES)
 
 # Create AngelScript Standard Library
 
