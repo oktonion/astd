@@ -74,23 +74,22 @@
 #endif // ANGELSCRIPT_SCRIPTBUILDER_H_PATH
 
 #include ANGELSCRIPT_SCRIPTBUILDER_H_PATH
-#define SERVICE_IMPORT_FUNCTION(name, decl_cstr, module_cstr) asIScriptFunction* name = 0;{                                                                                      \
-            struct MessageCallbackRAII {                                                                                                                                         \
-                typedef struct EngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                   \
-                MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                   \
-                    if (EngineRAII() == &EngineRAII_t::MessageCallback) { EngineRAII(&MessageCallbackRAII::MessageCallback); }                                                   \
-                }                                                                                                                                                                \
-                ~MessageCallbackRAII() {                                                                                                                                         \
-                    if (EngineRAII() == &MessageCallbackRAII::MessageCallback) { EngineRAII(&EngineRAII_t::MessageCallback); }                                                   \
-                }                                                                                                                                                                \
-            } MessageCallbackRAII(EngineRAII);                                                                                                                                   \
-            CScriptBuilder builder; asIScriptEngine *asIScriptEngine = &EngineRAII.engine; const std::string moduleName = module_cstr; const std::string decl = decl_cstr;       \
-            DOCTEST_REQUIRE_MESSAGE(0 <= builder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName); \
-            DOCTEST_REQUIRE_MESSAGE(0 <= builder.AddSectionFromFile(moduleName.c_str()), "CScriptBuilder::AddSectionFromFile: cannot load script from: " + moduleName);          \
-            DOCTEST_REQUIRE_MESSAGE(0 <= builder.BuildModule(), "CScriptBuilder::BuildModule: script has errors: " + moduleName);                                                \
-            asIScriptModule *asIScriptModule = 0;                                                                                                                                \
-            DOCTEST_REQUIRE_MESSAGE((asIScriptModule = asIScriptEngine->GetModule(moduleName.c_str())), "asIScriptEngine::GetModule: cannot find module: " + moduleName);        \
-            DOCTEST_REQUIRE_MESSAGE((name = asIScriptModule->GetFunctionByDecl(decl.c_str())), "asIScriptModule::GetFunctionByDecl: cannot find function: " + decl);             \
+#define SERVICE_IMPORT_FUNCTION(name, decl_cstr, module_cstr) asIScriptFunction* name = 0;{                                                                                             \
+            struct MessageCallbackRAII {                                                                                                                                                \
+                typedef struct EngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                          \
+                MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
+                    if (EngineRAII() == &EngineRAII_t::MessageCallback) { EngineRAII(&MessageCallbackRAII::MessageCallback); }                                                          \
+                }                                                                                                                                                                       \
+                ~MessageCallbackRAII() {                                                                                                                                                \
+                    if (EngineRAII() == &MessageCallbackRAII::MessageCallback) { EngineRAII(&EngineRAII_t::MessageCallback); }                                                          \
+                }                                                                                                                                                                       \
+            } MessageCallbackRAII(EngineRAII); asIScriptModule *asIScriptModule = 0;                                                                                                    \
+            CScriptBuilder CScriptBuilder; asIScriptEngine *asIScriptEngine = &EngineRAII.engine; const std::string moduleName = module_cstr; const std::string decl = decl_cstr;       \
+            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName); \
+            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.AddSectionFromFile(moduleName.c_str()), "CScriptBuilder::AddSectionFromFile: cannot load script from: " + moduleName);          \
+            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.BuildModule(), "CScriptBuilder::BuildModule: script has errors: " + moduleName);                                                \
+            DOCTEST_REQUIRE_MESSAGE((asIScriptModule = asIScriptEngine->GetModule(moduleName.c_str())), "asIScriptEngine::GetModule: cannot find module: " + moduleName);               \
+            DOCTEST_REQUIRE_MESSAGE((name = asIScriptModule->GetFunctionByDecl(decl.c_str())), "asIScriptModule::GetFunctionByDecl: cannot find function: " + decl);                    \
         } 
 
 #endif // SERVICE_TESTSUIT_H
