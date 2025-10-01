@@ -15,6 +15,7 @@
 #define SERVICE_CONCAT3(a, b) a##b
 #define SERVICE_CONCAT2(a, b) SERVICE_CONCAT3(a,b)
 #define SERVICE_CONCAT(a, b) SERVICE_CONCAT2(a,b)
+#define SERVICE_WRAP(a) a
 
 #ifndef ASTD_DIRECTORY
 #   define ASTD_DIRECTORY ../std/
@@ -23,15 +24,15 @@
 #   define ANGELSCRIPT_SDK_DIRECTORY ../angelscript/sdk/
 #endif
 #ifndef ANGELSCRIPT_ADD_ON_DIRECTORY
-#   define ANGELSCRIPT_ADD_ON_DIRECTORY SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY,add_on/)
+#   define ANGELSCRIPT_ADD_ON_DIRECTORY SERVICE_WRAP(ANGELSCRIPT_SDK_DIRECTORY)add_on/
 #endif
 
-#define SCRIPTSTD_H_PATH(name) <SERVICE_CONCAT(ASTD_DIRECTORY, SERVICE_CONCAT(name, SERVICE_CONCAT(/scriptstd_,name.h)))>
+#define SCRIPTSTD_H_PATH(name) <SERVICE_WRAP(SERVICE_WRAP(ASTD_DIRECTORY)name)SERVICE_CONCAT(/scriptstd_,name.h)>
 #ifndef ANGELSCRIPT_LIB_H_PATH
-#   define ANGELSCRIPT_LIB_H_PATH <SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY, SERVICE_CONCAT(angelscript/include/, angelscript.h))>
+#   define ANGELSCRIPT_LIB_H_PATH <SERVICE_WRAP(ANGELSCRIPT_SDK_DIRECTORY)angelscript/include/angelscript.h>
 #endif
-#define ANGELSCRIPT_LIB_SRC_H_PATH(name) <SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY, SERVICE_CONCAT(angelscript/source/, name.h))>
-#define ANGELSCRIPT_ADD_ON_H_PATH(name) <SERVICE_CONCAT(ANGELSCRIPT_ADD_ON_DIRECTORY, SERVICE_CONCAT(name/, name.h))>
+#define ANGELSCRIPT_LIB_SRC_H_PATH(name) <SERVICE_WRAP(ANGELSCRIPT_SDK_DIRECTORY)angelscript/source/name.h>
+#define ANGELSCRIPT_ADD_ON_H_PATH(name) <SERVICE_WRAP(ANGELSCRIPT_ADD_ON_DIRECTORY)name/name.h>
 
 #ifndef ANGELSCRIPT_SCRIPTBUILDER_H_PATH
 #   define ANGELSCRIPT_SCRIPTBUILDER_H_PATH ANGELSCRIPT_ADD_ON_H_PATH(scriptbuilder)
@@ -145,7 +146,9 @@ namespace testsuite {
                 return asNO_FUNCTION;
 
             struct lambdas {
-                static enum asECallConvTypes convert_call_conv(enum internalCallConv call_conv)
+                typedef ANGELSCRIPT_NS_QUALIFIER asECallConvTypes asECallConvTypes;
+                typedef ANGELSCRIPT_NS_QUALIFIER internalCallConv internalCallConv;
+                static asECallConvTypes convert_call_conv(internalCallConv call_conv)
                 {
                     if (ICC_GENERIC_FUNC == call_conv || ICC_GENERIC_FUNC_RETURNINMEM == call_conv || ICC_GENERIC_METHOD == call_conv || ICC_GENERIC_METHOD_RETURNINMEM == call_conv)
                         return asCALL_GENERIC;
@@ -164,7 +167,7 @@ namespace testsuite {
                     if (ICC_THISCALL_OBJLAST == call_conv || ICC_THISCALL_OBJLAST_RETURNINMEM == call_conv || ICC_VIRTUAL_THISCALL_OBJLAST == call_conv || ICC_VIRTUAL_THISCALL_OBJLAST_RETURNINMEM == call_conv)
                         return asCALL_THISCALL_OBJLAST;
                     DOCTEST_FAIL("cannot convert internal calling convention: unknown ICC_ type");
-                    return enum asECallConvTypes(42);
+                    return (asECallConvTypes)(42);
 
                 }
             };
