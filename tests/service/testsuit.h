@@ -31,11 +31,11 @@
             {                                                                                                                                                                          \
                 if (asMSGTYPE_WARNING == asSMessageInfo->type)                                                                                                                         \
                 {                                                                                                                                                                      \
-                    DOCTEST_WARN_MESSAGE(!asSMessageInfo, asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message); \
+                    DOCTEST_WARN_MESSAGE(asSMessageInfo, asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);  \
                 }                                                                                                                                                                      \
                 else if (asMSGTYPE_INFORMATION == asSMessageInfo->type)                                                                                                                \
                 {                                                                                                                                                                      \
-                    DOCTEST_INFO(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                          \
+                    DOCTEST_MESSAGE(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                       \
                 }                                                                                                                                                                      \
                 else                                                                                                                                                                   \
                 {                                                                                                                                                                      \
