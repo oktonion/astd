@@ -19,11 +19,18 @@
 #ifndef ASTD_DIRECTORY
 #   define ASTD_DIRECTORY ../std/
 #endif
+#ifndef ANGELSCRIPT_SDK_DIRECTORY
+#   define ANGELSCRIPT_SDK_DIRECTORY ../angelscript/sdk/
+#endif
 #ifndef ANGELSCRIPT_ADD_ON_DIRECTORY
-#   define ANGELSCRIPT_ADD_ON_DIRECTORY ../angelscript/sdk/add_on/
+#   define ANGELSCRIPT_ADD_ON_DIRECTORY SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY,add_on/)
 #endif
 
 #define SCRIPTSTD_H_PATH(name) <SERVICE_CONCAT(ASTD_DIRECTORY, SERVICE_CONCAT(name, SERVICE_CONCAT(/scriptstd_,name.h)))>
+#ifndef ANGELSCRIPT_LIB_H_PATH
+#   define ANGELSCRIPT_LIB_H_PATH <SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY, SERVICE_CONCAT(angelscript/include/, angelscript.h))>
+#endif
+#define ANGELSCRIPT_LIB_SRC_H_PATH(name) <SERVICE_CONCAT(ANGELSCRIPT_SDK_DIRECTORY, SERVICE_CONCAT(angelscript/source/, name.h))>
 #define ANGELSCRIPT_ADD_ON_H_PATH(name) <SERVICE_CONCAT(ANGELSCRIPT_ADD_ON_DIRECTORY, SERVICE_CONCAT(name/, name.h))>
 
 #define SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(name) \
@@ -37,18 +44,80 @@
                 {                                                                                                                                                                      \
                     DOCTEST_MESSAGE(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                       \
                 }                                                                                                                                                                      \
-                else                                                                                                                                                                   \
+                else if (asMSGTYPE_ERROR == asSMessageInfo->type)                                                                                                                      \
                 {                                                                                                                                                                      \
                     DOCTEST_FAIL_CHECK(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                    \
                 }                                                                                                                                                                      \
+                else throw(asSMessageInfo->message);                                                                                                                                   \
             }
+
+#include ANGELSCRIPT_LIB_SRC_H_PATH(as_scriptengine)
+
+struct asIScriptEngineHack : 
+#   ifdef AS_NAMESPACE_QUALIFIER
+    AS_NAMESPACE_QUALIFIER
+#   endif
+    asCScriptEngine {
+    static int GetMessageCallback(asIScriptEngine& engine_interface, asSFuncPtr* callback, void** obj, asDWORD* callConv)
+    {
+        asCScriptEngine& engine = dynamic_cast<asCScriptEngine&>(engine_interface); // will generate exception with some user provided engine class and that's allright
+#       ifdef AS_NAMESPACE_QUALIFIER
+        using AS_NAMESPACE_QUALIFIER asSSystemFunctionInterface;
+#       endif
+        bool                        &msgCallback     = engine.msgCallback;
+
+        if (!msgCallback)
+            return asNO_FUNCTION;
+
+        struct lambdas {
+            static asECallConvTypes convert_call_conv(internalCallConv call_conv)
+            {
+                if (ICC_GENERIC_FUNC == call_conv || ICC_GENERIC_FUNC_RETURNINMEM == call_conv || ICC_GENERIC_METHOD == call_conv || ICC_GENERIC_METHOD_RETURNINMEM == call_conv)
+                    return asCALL_GENERIC;
+                if (ICC_CDECL == call_conv || ICC_CDECL_RETURNINMEM == call_conv)
+                    return asCALL_CDECL;
+                if (ICC_CDECL_OBJFIRST == call_conv || ICC_CDECL_OBJFIRST_RETURNINMEM == call_conv)
+                    return asCALL_CDECL_OBJFIRST;
+                if (ICC_CDECL_OBJLAST== call_conv || ICC_CDECL_OBJLAST_RETURNINMEM == call_conv)
+                    return asCALL_CDECL_OBJLAST;
+                if (ICC_STDCALL == call_conv || ICC_STDCALL_RETURNINMEM == call_conv)
+                    return asCALL_STDCALL;
+                if (ICC_THISCALL == call_conv || ICC_THISCALL_RETURNINMEM == call_conv || ICC_VIRTUAL_THISCALL == call_conv || ICC_VIRTUAL_THISCALL_RETURNINMEM == call_conv)
+                    return asCALL_THISCALL;
+                if (ICC_THISCALL_OBJFIRST == call_conv || ICC_THISCALL_OBJFIRST_RETURNINMEM == call_conv || ICC_VIRTUAL_THISCALL_OBJFIRST == call_conv || ICC_VIRTUAL_THISCALL_OBJFIRST_RETURNINMEM == call_conv)
+                    return asCALL_THISCALL_OBJFIRST;
+                if (ICC_THISCALL_OBJLAST == call_conv || ICC_THISCALL_OBJLAST_RETURNINMEM == call_conv || ICC_VIRTUAL_THISCALL_OBJLAST == call_conv || ICC_VIRTUAL_THISCALL_OBJLAST_RETURNINMEM == call_conv)
+                    return asCALL_THISCALL_OBJLAST;
+                DOCTEST_FAIL("cannot convert internal calling convention: unknown ICC_ type");
+                return asECallConvTypes(42);
+
+            }
+        };
+
+        asSSystemFunctionInterface& msgCallbackFunc = engine.msgCallbackFunc;
+        void*& msgCallbackObj = engine.msgCallbackObj;
+
+        asSFuncPtr msgCallbackOriginalFuncPtr = 0;
+        msgCallbackOriginalFuncPtr.ptr.f.func = msgCallbackFunc.func;
+        asECallConvTypes msgCallbackOriginalCallConv = lambdas::convert_call_conv(msgCallbackFunc.callConv);
+
+        if (callback)
+            *callback = msgCallbackOriginalFuncPtr;
+        if (obj)
+            *obj = msgCallbackObj;
+        if (callConv)
+            *callConv = msgCallbackOriginalCallConv;
+
+        return asSUCCESS;
+    }
+};
 
 #define SERVICE_INIT_ENGINE_RAII() struct EngineRAII {                                                                                                        \
             typedef void (*MessageCallback_t)(const asSMessageInfo*, void*);                                                                                  \
             EngineRAII(MessageCallback_t MessageCallback = EngineRAII::MessageCallback, void* param = 0)                                                      \
             : engine(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                                         \
             MessageCallback_t operator()(MessageCallback_t MessageCallback = 0, void* param = 0) const {                                                      \
-                asSFuncPtr asSFuncPtr = 0; void* obj; asDWORD callConv; engine.GetMessageCallback(&asSFuncPtr, &obj, &callConv);                              \
+                asSFuncPtr asSFuncPtr = 0; void* obj; asDWORD callConv; asIScriptEngineHack::GetMessageCallback(engine, &asSFuncPtr, &obj, &callConv);        \
                 if (MessageCallback) engine.SetMessageCallback(asFUNCTION(MessageCallback), param, asCALL_CDECL);                                             \
                 if (asCALL_CDECL == callConv) return reinterpret_cast<MessageCallback_t>(asSFuncPtr.ptr.f.func);                                              \
                 return 0;                                                                                                                                     \
