@@ -79,7 +79,10 @@ TEST_CASE("astd: chrono")
 
     SUBCASE("importing function 'int chrono_test()'")
     {
-        SERVICE_IMPORT_FUNCTION(chrono_test, "int chrono_test()", script_path);
+        SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
+
+        CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
+        CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
     }
 }
 
