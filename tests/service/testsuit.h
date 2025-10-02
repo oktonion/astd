@@ -295,7 +295,7 @@ namespace testsuite {
         } ContextRAII(EngineRAII); testsuite::asIScriptContext &name = ContextRAII.context;
 
 
-#define SERVICE_IMPORT_FUNCTION(name, decl_cstr, module_cstr) asIScriptFunction* name = 0;{                                                                                             \
+#define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) asIScriptFunction* name = 0;{                                                                                             \
             struct MessageCallbackRAII {                                                                                                                                                \
                 typedef struct EngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                          \
                 MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
