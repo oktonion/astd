@@ -29,7 +29,8 @@ jobs:
              cmake --build ./out --config Release
             RUN_SCRIPT: run_tests.sh
             SETUP_SCRIPT: |
-              chmod a+rwx ./run_tests.sh
+               ls
+              #chmod a+rwx ./run_tests.sh
 
 
           - os: ubuntu-latest
@@ -48,7 +49,8 @@ jobs:
              cmake --build ./out --config Release
             RUN_SCRIPT: run_tests.sh
             SETUP_SCRIPT: |
-              chmod a+rwx ./run_tests.sh
+              ls
+              #chmod a+rwx ./run_tests.sh
   
           - os: ubuntu-latest
             TARGET: x86_64-unknown-linux-musl
@@ -66,7 +68,8 @@ jobs:
              cmake --build ./out --config Release
             RUN_SCRIPT: run_tests.sh
             SETUP_SCRIPT: |
-              chmod a+rwx ./run_tests.sh
+              ls
+              #chmod a+rwx ./run_tests.sh
 
           - os: ubuntu-20.04
             COMPILER: gcc
@@ -94,7 +97,7 @@ jobs:
               dpkg --list | grep compiler
               sudo /sbin/ldconfig -p | grep libgcc
               sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
-              chmod a+rwx ./run_tests.sh
+              #chmod a+rwx ./run_tests.sh
 
           - os: ubuntu-20.04
             COMPILER: gcc
@@ -125,7 +128,7 @@ jobs:
               dpkg --list | grep compiler
               #sudo /sbin/ldconfig -p | grep libgcc
               #sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
-              chmod a+rwx ./run_tests.sh      
+              #chmod a+rwx ./run_tests.sh      
     
     steps:
     - uses: actions/checkout@v2
