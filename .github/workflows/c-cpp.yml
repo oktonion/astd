@@ -152,7 +152,7 @@ jobs:
       matrix:
         include:
     
-          - os: windows-2019
+          - os: windows-2022
             COMPILER: cl
             LINKER: ilink
             CPP_COMPILER: cl
