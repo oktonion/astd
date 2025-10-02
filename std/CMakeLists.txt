@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.15)
 
 
 # Set the project name
-project ("astd_tests" VERSION 1.0.0 LANGUAGES C CXX)
+project ("angelscript-std" VERSION 1.0.0 LANGUAGES C CXX)
 
 # Set project variables
 
