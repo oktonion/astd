@@ -29,6 +29,11 @@
 #include ANGELSCRIPT_MATH_H_PATH
 
 #include <string>
+#include <cstring>
+
+
+SERVICE_FILE_TRANSLATION_YYMMDD_DATE(TRANSLATION_YYMMDD_DATE);
+SERVICE_FILE_TRANSLATION_HHMMSS_TIME(TRANSLATION_HHMMSS_TIME);
 
 TEST_CASE("astd: chrono")
 {
@@ -37,9 +42,28 @@ TEST_CASE("astd: chrono")
     SERVICE_INIT_ENGINE_RAII();
     SERVICE_REQUEST_CONTEXT_RAII(script_context);
 
+    using namespace testsuite::AngelScript; // for all types of AngelScript
+
     {
         asIScriptEngine* asIScriptEngine = script_context.GetEngine();
         RegisterStdString(asIScriptEngine);
+        {
+            const long translation_time_current = testsuite::strtol(TRANSLATION_HHMMSS_TIME);
+            const long translation_date_current = testsuite::strtol(TRANSLATION_YYMMDD_DATE);
+            const long translation_date_deadline = 251010; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
+                                                           // see: https://github.com/anjo76/angelscript/issues/14#issuecomment-3355997388
+                                                           // I hope that by 10.10.2025 it would be fixed
+
+            if (translation_date_current < translation_date_deadline)
+            { // until bug is fixed we need to unregister 'extra' format function from `scriptstdstring` addon to continue with testing
+                asIScriptFunction* string_addon_format_func = 0;
+                REQUIRE((string_addon_format_func = asIScriptEngine->GetGlobalFunctionByDecl("string format(const string&in ,const ?&in...)")));
+
+                REQUIRE_NOTHROW({
+                    testsuite::asCScriptEngineHack::UnregisterGlobalFunction(*asIScriptEngine, string_addon_format_func);
+                });
+            }
+        }
         {
             RegisterScriptMath(asIScriptEngine);
             asIScriptEngine->SetDefaultNamespace("std");
