@@ -148,7 +148,7 @@ namespace fmt {
 #define typeID(n) asETypeIdFlags typeID##n
 #define ref_param(n) ref##n
 #define typeID_param(n) typeID##n
-#define arg(n) ?&in arg##n
+#define arg(n) const ?&in arg##n
 
 
 #define INLINE_FUNCTION_WITH_REFERENCE_DECL(fname, n) (const std::string& ,FMT_GEN(n,	ref_typeID_pair_type))

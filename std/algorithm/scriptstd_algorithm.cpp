@@ -75,11 +75,17 @@ namespace astd {
             return !!c;
         }
 
+    protected:
+        template<class FuncT>
+        static FuncT func_call(FuncT call) { return call; }
+
         static std::string to_string(int i) {
 
             char buf[1024] = { 0 };
-            {using namespace std; sprintf(buf, "%d", i); }
+            {using namespace std; func_call(sprintf)(buf, "%d", i); }
+            return buf;
         }
+    public:
 
         LegacyIterator &operator++() {
             if (!opPreInc) return *this;
