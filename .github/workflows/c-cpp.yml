@@ -140,7 +140,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: setup enviroment
-      run: ${{matrix.SETUP_SCRIPT}}
+      run: |
+       git submodule update --init --recursive
+       ${{matrix.SETUP_SCRIPT}}
     - name: build lib
       env:
         COMPILER: ${{ matrix.CPP_COMPILER }}
