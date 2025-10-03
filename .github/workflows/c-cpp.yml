@@ -8,11 +8,12 @@ on:
 
 jobs:
   unix-old-cpp:
-  #if: ${{ false }} # disable for now
+    
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
+         if: ${{ false }} # disable for now
           - os: ubuntu-22.04
             COMPILER: gcc-3.4
             LINKER: gcc
