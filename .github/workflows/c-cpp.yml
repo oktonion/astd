@@ -81,11 +81,11 @@ jobs:
             LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
             BUILD_LIB_SCRIPT: |
              cd ./std
-             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{ matrix.CPP_COMPILER }} -DCMAKE_C_COMPILER=${{ matrix.COMPILER }}
              cmake --build ./out --config Release
              cd ..
             BUILD_SCRIPT: |
-             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{ matrix.CPP_COMPILER }} -DCMAKE_C_COMPILER=${{ matrix.COMPILER }}
              cmake --build ./out --config Release
             RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
@@ -111,11 +111,11 @@ jobs:
             LIBRARY_PATH: $LIBRARY_PATH
             BUILD_LIB_SCRIPT: |
              cd ./std
-             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{ matrix.CPP_COMPILER }} -DCMAKE_C_COMPILER=${{ matrix.COMPILER }}
              cmake --build ./out --config Release
              cd ..
             BUILD_SCRIPT: |
-             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{ matrix.CPP_COMPILER }} -DCMAKE_C_COMPILER=${{ matrix.COMPILER }}
              cmake --build ./out --config Release
             RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
