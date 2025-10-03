@@ -41,7 +41,7 @@ jobs:
              cd ./tests
              chmod a+rwx ./run_tests.sh
              cd ..
-          if: ${{ false }} # disable for now
+            if: ${{ false }} # disable for now
           - os: ubuntu-22.04
             COMPILER: gcc-4.4
             LINKER: gcc
