@@ -74,7 +74,7 @@ jobs:
              chmod a+rwx ./run_tests.sh
              cd ..
 
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             COMPILER: gcc
             LINKER: gcc
             CPP_COMPILER: g++-3.4
@@ -104,7 +104,7 @@ jobs:
              chmod a+rwx ./run_tests.sh
              cd ..
 
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             COMPILER: gcc
             LINKER: gcc
             CPP_COMPILER: g++-4.4
