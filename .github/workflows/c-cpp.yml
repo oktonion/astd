@@ -13,8 +13,6 @@ jobs:
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        experimental:
-          - false
         include:
           - os: ubuntu-22.04
             experimental: true
@@ -48,6 +46,7 @@ jobs:
              cd ..
 
           - os: ubuntu-22.04
+            experimental: false
             COMPILER: gcc-4.4
             LINKER: gcc
             CPP_COMPILER: g++-4.4
