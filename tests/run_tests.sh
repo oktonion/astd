@@ -1,7 +1,15 @@
 run_ok=0
 tests_failed="unsuccessful tests:"
 
-for file in ./tests/bin/*; do
+if [ -d "./tests/bin/" ]; then
+  cd ./tests/bin/
+else
+  echo "cannot find ./tests/bin/ directory: check the cwd this script is run from"
+  exit 1
+fi
+
+
+for file in ./*; do
   if file "$file" | grep -q "exec"
   then
     chmod +x "$file"
