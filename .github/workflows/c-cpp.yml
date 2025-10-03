@@ -27,10 +27,11 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.sh
+            RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
-               ls
-              #chmod a+rwx ./run_tests.sh
+             cd ./tests
+             chmod a+rwx ./run_tests.sh
+             cd ..
 
 
           - os: ubuntu-latest
@@ -47,10 +48,11 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.sh
+            RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
-              ls
-              #chmod a+rwx ./run_tests.sh
+             cd ./tests
+             chmod a+rwx ./run_tests.sh
+             cd ..
   
           - os: ubuntu-latest
             TARGET: x86_64-unknown-linux-musl
@@ -66,10 +68,11 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.sh
+            RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
-              ls
-              #chmod a+rwx ./run_tests.sh
+             cd ./tests
+             chmod a+rwx ./run_tests.sh
+             cd ..
 
           - os: ubuntu-20.04
             COMPILER: gcc
@@ -84,20 +87,22 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.sh
+            RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
-              echo "deb     [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
-              echo "deb-src [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
-              #echo "deb     http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-              #echo "deb-src http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-              #echo "deb     http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
-              #echo "deb-src http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
-              sudo apt-get update
-              sudo -E apt-get -yq --no-install-suggests --no-install-recommends install gcc-3.4 g++-3.4 gcc-multilib g++-multilib
-              dpkg --list | grep compiler
-              sudo /sbin/ldconfig -p | grep libgcc
-              sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
-              #chmod a+rwx ./run_tests.sh
+             echo "deb     [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
+             echo "deb-src [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
+             #echo "deb     http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb-src http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb     http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb-src http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             sudo apt-get update
+             sudo -E apt-get -yq --no-install-suggests --no-install-recommends install gcc-3.4 g++-3.4 gcc-multilib g++-multilib
+             dpkg --list | grep compiler
+             sudo /sbin/ldconfig -p | grep libgcc
+             sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
+             cd ./tests
+             chmod a+rwx ./run_tests.sh
+             cd ..
 
           - os: ubuntu-20.04
             COMPILER: gcc
@@ -112,23 +117,25 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.sh
+            RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
-              echo "deb     [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
-              echo "deb-src [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
-              echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-              echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-              echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
-              echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
-              sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
-              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty main'
-              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty universe'
-              sudo apt-get update
-              sudo -E apt-get -yq --no-install-suggests --no-install-recommends install g++-4.4
-              dpkg --list | grep compiler
-              #sudo /sbin/ldconfig -p | grep libgcc
-              #sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
-              #chmod a+rwx ./run_tests.sh      
+             echo "deb     [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
+             echo "deb-src [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
+             echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
+             sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty main'
+             sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty universe'
+             sudo apt-get update
+             sudo -E apt-get -yq --no-install-suggests --no-install-recommends install g++-4.4
+             dpkg --list | grep compiler
+             #sudo /sbin/ldconfig -p | grep libgcc
+             #sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
+             cd ./tests
+             chmod a+rwx ./run_tests.sh
+             cd ..    
     
     steps:
     - uses: actions/checkout@v2
@@ -139,16 +146,16 @@ jobs:
         COMPILER: ${{ matrix.CPP_COMPILER }}
         LIBRARY_PATH: ${{ matrix.LIBRARY_PATH }}
       run: |
-        ./${{ matrix.BUILD_LIB_SCRIPT }}
+        ${{ matrix.BUILD_LIB_SCRIPT }}
     - name: build tests
       env:
         COMPILER: ${{ matrix.CPP_COMPILER }}
         LIBRARY_PATH: ${{ matrix.LIBRARY_PATH }}
       run: |
-        ./${{ matrix.BUILD_SCRIPT }}
+        ${{ matrix.BUILD_SCRIPT }}
     - name: run tests
       run: |
-        ./${{ matrix.RUN_SCRIPT }}
+        ${{ matrix.RUN_SCRIPT }}
   windows:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -168,15 +175,14 @@ jobs:
             BUILD_SCRIPT: |
              cmake -S ./ -B ./out
              cmake --build ./out --config Release
-            RUN_SCRIPT: run_tests.bat
+            RUN_SCRIPT: .\\tests\\run_tests.bat
             SETUP_SCRIPT: |
               if exist "C:\PROGRA~1\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat" (
                 set MSVS_VSVARS_PATH="C:\PROGRA~1\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
               ) else if exist "C:\PROGRA~2\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat" (
                 set MSVS_VSVARS_PATH="C:\PROGRA~2\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
               ) else (
-                echo "cannot find %MSVS_VSVARS_PATH%"
-                exit /B 1
+                echo "cannot find MSVS_VSVARS_PATH"
               )
               echo %MSVS_VSVARS_PATH%
               
