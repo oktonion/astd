@@ -75,13 +75,13 @@ jobs:
              cd ..
 
           - os: ubuntu-22.04
-            COMPILER: gcc
+            COMPILER: gcc-3.4
             LINKER: gcc
             CPP_COMPILER: g++-3.4
             LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:$LIBRARY_PATH
             BUILD_LIB_SCRIPT: |
              cd ./std
-             cmake -S ./ -B ./out
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
              cmake --build ./out --config Release
              cd ..
             BUILD_SCRIPT: |
@@ -105,7 +105,7 @@ jobs:
              cd ..
 
           - os: ubuntu-22.04
-            COMPILER: gcc
+            COMPILER: gcc-4.4
             LINKER: gcc
             CPP_COMPILER: g++-4.4
             LIBRARY_PATH: $LIBRARY_PATH
@@ -115,7 +115,7 @@ jobs:
              cmake --build ./out --config Release
              cd ..
             BUILD_SCRIPT: |
-             cmake -S ./ -B ./out
+             cmake -S ./ -B ./out -DCMAKE_CXX_COMPILER=${{CPP_COMPILER}} -DCMAKE_C_COMPILER=${{COMPILER}}
              cmake --build ./out --config Release
             RUN_SCRIPT: ./tests/run_tests.sh
             SETUP_SCRIPT: |
@@ -129,7 +129,7 @@ jobs:
              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty main'
              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty universe'
              sudo apt-get update
-             sudo -E apt-get -yq --no-install-suggests --no-install-recommends install g++-4.4
+             sudo -E apt-get -yq --no-install-suggests --no-install-recommends install gcc-4.4 g++-4.4
              dpkg --list | grep compiler
              #sudo /sbin/ldconfig -p | grep libgcc
              #sudo ln -s /lib/x86_64-linux-gnu/libgcc_s.so.1 /lib/libgcc_s.so.1
