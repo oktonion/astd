@@ -121,10 +121,10 @@ jobs:
             SETUP_SCRIPT: |
              echo "deb     [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
              echo "deb-src [trusted=yes] http://old-releases.ubuntu.com/ubuntu/ hardy universe" | sudo tee -a /etc/apt/sources.list
-             echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-             echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
-             echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
-             echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian/20070730T000000Z/ lenny main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb     [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
+             #echo "deb-src [trusted=yes] http://snapshot.debian.org/archive/debian-security/20070730T000000Z/ lenny/updates main" | sudo tee -a /etc/apt/sources.list
              sudo -E apt-add-repository -y "ppa:ubuntu-toolchain-r/test"
              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty main'
              sudo add-apt-repository 'deb http://archive.ubuntu.com/ubuntu/ trusty universe'
