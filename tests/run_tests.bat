@@ -9,8 +9,7 @@ set run_ok=!true!
 
 if exist ".\tests\bin\" (
   cd .\tests\bin\
-)
-else (
+) else (
   echo "cannot find .\tests\bin\ directory: check the cwd this script is run from"
   exit /B 1
 )
@@ -21,7 +20,7 @@ for /f %%f in ('dir /b ".\*.exe"') do (
   
   ver > nul
 
-  .\tests\bin\%%f --duration && (
+  .\%%f --duration && (
     echo "%date% %time% ...ok."
   ) || (
     echo "...failed with !errorlevel!."
