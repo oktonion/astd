@@ -30,32 +30,33 @@ namespace astd {
 
         typedef char pointer_size_must_be_equal_int[sizeof(intptr_t) == sizeof(void*) ? 1 : -1];
 
-        ptr(asITypeInfo* typeinfo, int address = 0) 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr(asITypeInfo* typeinfo, int address = 0
+            , int(*)[sizeof(pointer_size_must_be_equal_int)] = 0)
+            throw()
             : address(address)
             , typeinfo(typeinfo)
         { }
 
-        ptr(asITypeInfo* typeinfo, void* address) 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr(asITypeInfo* typeinfo, void* address
+            , int(*)[sizeof(pointer_size_must_be_equal_int)] = 0)
+            throw()
             : address(0)
             , typeinfo(typeinfo)
         { 
             std::memcpy(&(this->address), &address, sizeof(address));
         }
 
-        ptr(const ptr &other, asITypeInfo* typeinfo) 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr(const ptr &other, asITypeInfo* typeinfo
+            , int(*)[sizeof(pointer_size_must_be_equal_int)] = 0)
+            throw()
             : address(other.address)
             , typeinfo(typeinfo)
         { }
 
-        ~ptr() 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        ~ptr() throw() 
         { }
 
-        ptr& operator=(const ptr& other) 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        ptr& operator=(const ptr& other) throw() 
         {
             address = other.address;
             typeinfo = other.typeinfo;
@@ -63,8 +64,7 @@ namespace astd {
         }
 
 
-        std::size_t size() const 
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        std::size_t size(int(*)[sizeof(pointer_size_must_be_equal_int)] = 0) const throw() 
         {
             std::size_t result = 1;
             if (typeinfo) {
@@ -87,49 +87,42 @@ namespace astd {
             return 1;
         }
 
-        ptr& operator++()
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr& operator++() throw()
         {
             address += size();
             return *this;
         }
 
-        ptr operator++(int)
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr operator++(int) throw()
         {
             ptr tmp = *this;
             address += size();
             return tmp;
         }
 
-        ptr operator+(int shift) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr operator+(int shift) const throw()
         {
             return ptr(typeinfo, address + shift * size());
         }
 
-        ptr operator-(int shift) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr operator-(int shift) const throw()
         {
             return ptr(typeinfo, address - shift * size());
         }
 
-        ptr& operator+=(int shift)
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr& operator+=(int shift) throw()
         {
             address += shift * size();
             return *this;
         }
 
-        ptr& operator-=(int shift)
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)]))
+        ptr& operator-=(int shift) throw()
         {
             address -= shift * size();
             return *this;
         }
 
-        void* operator[](int index)
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        void* operator[](int index) throw()
         {
             unsigned char* data = 0;
             std::memcpy(&data, &address, sizeof(data));
@@ -137,8 +130,7 @@ namespace astd {
             return data;
         }
 
-        const void* operator[](int index) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        const void* operator[](int index) const throw()
         {
             const unsigned char* data = 0;
             std::memcpy(&data, &address, sizeof(data));
@@ -146,8 +138,7 @@ namespace astd {
             return data;
         }
 
-        bool operator==(const ptr& other) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        bool operator==(const ptr& other) const throw()
         {
             if (typeinfo != other.typeinfo)
                 return false;
@@ -157,32 +148,29 @@ namespace astd {
             return address == other.address;
         }
 
-        bool operator!=(const ptr& other) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        bool operator!=(const ptr& other) const throw()
         {
             return !(*this == other);
         }
 
-        bool operator<(const ptr& other) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        bool operator<(const ptr& other) const throw()
         {
             if (typeinfo != other.typeinfo)
                 return typeinfo < other.typeinfo;
             return address < other.address;
         }
 
-        bool operator>(const ptr& other) const
-            throw(void(int[sizeof(pointer_size_must_be_equal_int)])) 
+        bool operator>(const ptr& other) const throw()
         {
             if (typeinfo != other.typeinfo)
                 return typeinfo > other.typeinfo;
             return address > other.address;
         }
 
-        void* operator&() {
+        void* operator&() throw() {
             return &address;
         }
-        const void* operator&() const {
+        const void* operator&() const throw() {
             return &address;
         }
     };
