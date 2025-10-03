@@ -7,7 +7,16 @@ set false=1==0
 set "tests_failed=unsuccessful tests:"
 set run_ok=!true!
 
-for /f %%f in ('dir /b ".\tests\bin\*.exe"') do (
+if exist ".\tests\bin\" (
+  cd .\tests\bin\
+)
+else (
+  echo "cannot find .\tests\bin\ directory: check the cwd this script is run from"
+  exit /B 1
+)
+
+
+for /f %%f in ('dir /b ".\*.exe"') do (
   echo "%date% %time% running test %%~nf..."
   
   ver > nul
