@@ -10,10 +10,14 @@ jobs:
   unix-old-cpp:
   #if: ${{ false }} # disable for now
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
-        exclude:
+        experimental:
+          - false
+        include:
           - os: ubuntu-22.04
+            experimental: true
             COMPILER: gcc-3.4
             LINKER: gcc
             CPP_COMPILER: g++-3.4
@@ -42,7 +46,7 @@ jobs:
              cd ./tests
              chmod a+rwx ./run_tests.sh
              cd ..
-        include:
+
           - os: ubuntu-22.04
             COMPILER: gcc-4.4
             LINKER: gcc
