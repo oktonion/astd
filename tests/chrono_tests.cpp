@@ -35,24 +35,70 @@
 SERVICE_FILE_TRANSLATION_YYMMDD_DATE(TRANSLATION_YYMMDD_DATE);
 SERVICE_FILE_TRANSLATION_HHMMSS_TIME(TRANSLATION_HHMMSS_TIME);
 
-TEST_CASE("astd: chrono")
+namespace {
+    struct TestCase {
+        testsuite::AngelScript::asIScriptContext* script_context;
+        TestCase() : script_context(0){
+        }
+
+        void CheckSubcases(testsuite::IEngineRAII& EngineRAII, const std::string &script_path) {
+
+            REQUIRE(script_context);
+            testsuite::AngelScript::asIScriptContext& script_context = *this->script_context;
+
+            SUBCASE("importing function 'int chrono_test()'")
+            {
+                
+                SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
+
+                CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
+                CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
+            }
+        }
+        
+    };
+}
+
+TEST_CASE_FIXTURE(TestCase, "astd: chrono: chrono_script.as")
 {
-    const std::string script_path = "./../service/resources/script.as";
+    const std::string script_path = "./../service/resources/chrono_script.as";
 
     SERVICE_INIT_ENGINE_RAII();
-    SERVICE_REQUEST_CONTEXT_RAII(script_context);
+    SERVICE_REQUEST_CONTEXT_RAII(testsuite::AngelScript::asIScriptContext & script_context);
+    TestCase::script_context = &script_context;
 
     using namespace testsuite::AngelScript; // for all types of AngelScript
 
     {
         asIScriptEngine* asIScriptEngine = script_context.GetEngine();
+
+        RegisterScriptStd_Ratio(asIScriptEngine);
+        RegisterScriptStd_Chrono(asIScriptEngine);
+    }
+
+    CheckSubcases(EngineRAII, script_path);
+}
+
+TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
+{
+    const std::string script_path = "./../service/resources/script.as";
+
+    SERVICE_INIT_ENGINE_RAII();
+    SERVICE_REQUEST_CONTEXT_RAII(testsuite::AngelScript::asIScriptContext &script_context);
+    TestCase::script_context = &script_context;
+
+    using namespace testsuite::AngelScript; // for all types of AngelScript
+
+    {
+        asIScriptEngine* asIScriptEngine = script_context.GetEngine();
+
         RegisterStdString(asIScriptEngine);
         {
             const long translation_time_current = testsuite::strtol(TRANSLATION_HHMMSS_TIME);
             const long translation_date_current = testsuite::strtol(TRANSLATION_YYMMDD_DATE);
-            const long translation_date_deadline = 251010; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
+            const long translation_date_deadline = 251012; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
                                                            // see: https://github.com/anjo76/angelscript/issues/14#issuecomment-3355997388
-                                                           // I hope that by 10.10.2025 it would be fixed
+                                                           // I hope that by 12.10.2025 it would be fixed
 
             if (translation_date_current < translation_date_deadline)
             { // until bug is fixed we need to unregister 'extra' format function from `scriptstdstring` addon to continue with testing
@@ -61,7 +107,7 @@ TEST_CASE("astd: chrono")
 
                 REQUIRE_NOTHROW({
                     testsuite::asCScriptEngineHack::UnregisterGlobalFunction(*asIScriptEngine, string_addon_format_func);
-                });
+                    });
             }
         }
         {
@@ -77,12 +123,14 @@ TEST_CASE("astd: chrono")
         RegisterScriptStd_Chrono(asIScriptEngine);
     }
 
-    SUBCASE("importing function 'int chrono_test()'")
-    {
-        SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
+    CheckSubcases(EngineRAII, script_path);
 
-        CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
+    SUBCASE("importing function 'int chrono_and_print_test()'")
+    {
+
+        SERVICE_IMPORT_FUNCTION(chrono_and_print_test, script_path, "int chrono_and_print_test()");
+
+        CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_and_print_test));
         CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
     }
 }
-
