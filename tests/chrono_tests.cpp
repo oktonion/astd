@@ -1,5 +1,3 @@
-#define ANGELSCRIPT_VERSION 23700
-
 #include "service/testsuit.h"
 
 #ifndef SCRIPTSTD_COROUTINES_H_PATH
