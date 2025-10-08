@@ -111,7 +111,7 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
             const long angelscript_ver = ANGELSCRIPT_VERSION;
 
             if (translation_date_current < translation_date_deadline 
-                && angelscript_ver > 23900)
+                || angelscript_ver <= 23900)
             { // until bug is fixed we need to unregister 'extra' format function from `scriptstdstring` addon to continue with testing
                 asIScriptFunction* string_addon_format_func = 0;
                 REQUIRE((string_addon_format_func = asIScriptEngine->GetGlobalFunctionByDecl("string format(const string&in ,const ?&in...)")));
