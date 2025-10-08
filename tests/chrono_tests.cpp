@@ -105,7 +105,7 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
         {
             const long translation_time_current = testsuite::strtol(TRANSLATION_HHMMSS_TIME);
             const long translation_date_current = testsuite::strtol(TRANSLATION_YYMMDD_DATE);
-            const long translation_date_deadline = 261008; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
+            const long translation_date_deadline = 261008; // as for 02.10.2025 AngelScript 2.39.0 WIP has bug with registering (...) functions, 
                                                            // see: https://github.com/anjo76/angelscript/issues/14#issuecomment-3355997388
                                                            // by 08.10.2025 it partially fixed and I hope that in next version by 08.10.2026 it would be fixed
             const long angelscript_ver = ANGELSCRIPT_VERSION;
