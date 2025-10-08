@@ -53,6 +53,10 @@ namespace astd {
                 other.internal_num % other.internal_den;
         }
 
+        ratio operator-() const {
+            return ratio(-internal_num, internal_den);
+        }
+
         ratio(const asINTMAX& num, const asINTMAX& den)
             : internal_num(num), internal_den(den) {}
 
