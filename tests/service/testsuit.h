@@ -96,6 +96,12 @@
                 else throw(asSMessageInfo->message);                                                                                                                                   \
             }
 
+#define SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(name) \
+            static void name(ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext, void*)                                                                                   \
+            {                                                                                                                                                                      \
+                DOCTEST_MESSAGE("unhandled exception caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());            \
+            }
+
 #ifdef AS_NAMESPACE_QUALIFIER
 #   ifndef ANGELSCRIPT_NS_QUALIFIER
 #       define ANGELSCRIPT_NS_QUALIFIER AS_NAMESPACE_QUALIFIER
@@ -293,12 +299,13 @@ namespace testsuite {
             friend struct ContextRAII;                                                                                                                            \
         } EngineRAII
 
-#define SERVICE_REQUEST_CONTEXT_RAII(name) struct ContextRAII {\
-            ContextRAII(struct EngineRAII& EngineRAII): context(*RequestContextFailedAssert(EngineRAII.engine)){}\
-            ~ContextRAII(){context.Release();}\
-            asIScriptContext &context;protected:\
-            static asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite;\
-                asIScriptContext* context=0; DOCTEST_REQUIRE_MESSAGE((context = engine.RequestContext()), "failed to request AngelScript context"); return context; }\
+#define SERVICE_REQUEST_CONTEXT_RAII(name) struct ContextRAII {  SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(ExceptionCallback)                                           \
+            ContextRAII(struct EngineRAII& EngineRAII)                                                                                                                \
+            : context(*RequestContextFailedAssert(EngineRAII.engine)) { context.SetExceptionCallback(asFUNCTION(ExceptionCallback), 0, asCALL_CDECL); }               \
+            ~ContextRAII(){context.Release();}                                                                                                                        \
+            asIScriptContext &context;protected:                                                                                                                      \
+            static asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite;                                                 \
+                asIScriptContext* context=0; DOCTEST_REQUIRE_MESSAGE((context = engine.RequestContext()), "failed to request AngelScript context"); return context; } \
         } ContextRAII(EngineRAII); name = ContextRAII.context;
 
 
