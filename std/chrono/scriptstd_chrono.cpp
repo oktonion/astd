@@ -201,15 +201,15 @@ namespace astd {
                 if (type_info.GetSubTypeCount() != 2)
                     return false;
 
-                enum {RepT, PeriodT};
+                enum { RepT_TmplParam, PeriodT_TmplParam  };
 
-                if (!type_info.GetSubType(RepT))
+                if (!type_info.GetSubType(RepT_TmplParam))
                 {
                     const bool is_integral =
-                        type_info.GetSubTypeId(RepT) >= asTYPEID_INT8 && type_info.GetSubTypeId(RepT) <= asTYPEID_UINT64;
+                        type_info.GetSubTypeId(RepT_TmplParam) >= asTYPEID_INT8 && type_info.GetSubTypeId(RepT_TmplParam) <= asTYPEID_UINT64;
                     return is_integral;
                 }
-                asITypeInfo& PeriodT_type_info = *type_info.GetSubType(PeriodT);
+                asITypeInfo& PeriodT_type_info = *type_info.GetSubType(PeriodT_TmplParam);
 
                 const std::string name = PeriodT_type_info.GetName();
 
@@ -806,7 +806,6 @@ namespace astd {
             };
 
             typedef ratio_ct<Num, Den> period;
-            typedef duration duration;
 
             duration_ct(rep ticks_number = rep())
                 : duration(period(), ticks_number)
@@ -1252,7 +1251,8 @@ namespace astd {
                         flags
                     ); if (r < 0) return false;
                     NamespaceRAII();
-                    if (!register_behaviours(engine, (type_str + "::duration").c_str(), "period")) return false;
+                    const std::string duration_typedef_str = type_str + "::duration";
+                    if (!register_behaviours(engine, static_cast<astd::type_cstr>(duration_typedef_str.c_str()), static_cast<astd::subtype_cstr>("period"))) return false;
                 }
 
                 return true;
@@ -1264,6 +1264,8 @@ namespace astd {
             : duration<RepT>
         {
             typedef duration<RepT> duration;
+            using duration::internal;
+
             struct meta
                 : duration::meta
             {
@@ -1408,11 +1410,11 @@ namespace astd {
                             }
                             else
                             {
-                                enum { RepT, PeriodT };
+                                enum { RepT_TmplParam, PeriodT_TmplParam };
                                 result.type_info = 
-                                    DurationT_type_info.GetSubType(RepT);
+                                    DurationT_type_info.GetSubType(RepT_TmplParam);
                                 result.type_id =
-                                    DurationT_type_info.GetSubTypeId(RepT);
+                                    DurationT_type_info.GetSubTypeId(RepT_TmplParam);
                             }
 
                             assert(!!result);
@@ -1452,6 +1454,7 @@ namespace astd {
                         struct duration_cast_ct
                             : duration_cast
                         {
+                            using duration_cast::internal;
                             struct meta : duration_cast::meta {
 #                               define NS_NAME "%s"
 #                               define TYPE_NAME "%s"
