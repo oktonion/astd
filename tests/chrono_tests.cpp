@@ -120,7 +120,7 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
 
                 REQUIRE_NOTHROW({
                     testsuite::asCScriptEngineHack::UnregisterGlobalFunction(*asIScriptEngine, string_addon_format_func);
-                    });
+                });
             }
         }
         {
