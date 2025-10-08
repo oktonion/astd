@@ -27,6 +27,12 @@ namespace fmt {
                     ::fmt::BasicFormatter<char> >(*(bool*)reference);
                 return ::fmt::internal::make_type(bool());
             }
+            else if (baseID == asTYPEID_INT64)
+            {
+                out = ArgArray::make<
+                    ::fmt::BasicFormatter<char> >(*(asINT64*)reference);
+                return ::fmt::internal::make_type(asINT64());
+            }
             else if (baseID == asTYPEID_INT32)
             {
                 out = ArgArray::make<
@@ -44,6 +50,12 @@ namespace fmt {
                 out = ArgArray::make<
                     ::fmt::BasicFormatter<char> >(*(asINT8*)reference);
                 return ::fmt::internal::make_type(asINT8());
+            }
+            else if (baseID == asTYPEID_UINT64)
+            {
+                out = ArgArray::make<
+                    ::fmt::BasicFormatter<char> >(*(asQWORD*)reference);
+                return ::fmt::internal::make_type(asQWORD());
             }
             else if (baseID == asTYPEID_UINT32)
             {
@@ -134,7 +146,15 @@ namespace fmt {
         {
             ArgArrayType = ArgArrayType | (init_arg(reference[i], typeID[i], array[i]) << (i * 4));
         }
-        ::fmt::print(format_str, fmt::ArgList(ArgArrayType, array));
+        try {
+            ::fmt::print(format_str, fmt::ArgList(ArgArrayType, array));
+        }
+        catch (const std::exception& e) {
+            throw;
+        }
+        catch (...) {
+            throw;
+        }
         return result;
     }
 

@@ -96,6 +96,12 @@
                 else throw(asSMessageInfo->message);                                                                                                                                   \
             }
 
+#define SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(name) \
+            static void name(ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext, void*)                                                                                   \
+            {                                                                                                                                                                      \
+                DOCTEST_MESSAGE("unhandled exception caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());            \
+            }
+
 #ifdef AS_NAMESPACE_QUALIFIER
 #   ifndef ANGELSCRIPT_NS_QUALIFIER
 #       define ANGELSCRIPT_NS_QUALIFIER AS_NAMESPACE_QUALIFIER
@@ -266,12 +272,20 @@ namespace testsuite {
             throw("");
         return result;
     }
-}
 
-#define SERVICE_INIT_ENGINE_RAII() struct EngineRAII {                                                                                                            \
-            typedef void (*MessageCallback_t)(const asSMessageInfo*, void*);                                                                                      \
+    struct IEngineRAII {
+        typedef void (*MessageCallback_t)(const asSMessageInfo*, void*);
+        virtual MessageCallback_t operator()(MessageCallback_t MessageCallback = 0, void* param = 0) const = 0;
+        testsuite::asIScriptEngine& engine;
+        IEngineRAII(testsuite::asIScriptEngine& engine) : engine(engine) {}
+        SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)
+    };
+}
+                                                                                                        
+
+#define SERVICE_INIT_ENGINE_RAII() struct EngineRAII: testsuite::IEngineRAII {                                                                                    \
             EngineRAII(MessageCallback_t MessageCallback = EngineRAII::MessageCallback, void* param = 0)                                                          \
-            : engine(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                                             \
+            : IEngineRAII(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                                        \
             MessageCallback_t operator()(MessageCallback_t MessageCallback = 0, void* param = 0) const { using namespace testsuite;                               \
                 asSFuncPtr asSFuncPtr = 0; void* obj; asDWORD callConv; testsuite::asCScriptEngineHack::GetMessageCallback(engine, &asSFuncPtr, &obj, &callConv); \
                 if (MessageCallback) engine.SetMessageCallback(asFUNCTION(MessageCallback), param, asCALL_CDECL);                                                 \
@@ -279,25 +293,25 @@ namespace testsuite {
                 return 0;                                                                                                                                         \
             }                                                                                                                                                     \
             ~EngineRAII(){ engine.ShutDownAndRelease(); }                                                                                                         \
-            SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                                                                                \
-            testsuite::asIScriptEngine &engine;protected:                                                                                                         \
+            protected:                                                                                                                                            \
             static asIScriptEngine *asCreateScriptEngineFailedAssert() { using namespace testsuite;                                                               \
                 asIScriptEngine* engine=0; DOCTEST_REQUIRE_MESSAGE((engine = asCreateScriptEngine()), "failed to create AngelScript engine"); return engine; }    \
             friend struct ContextRAII;                                                                                                                            \
         } EngineRAII
 
-#define SERVICE_REQUEST_CONTEXT_RAII(name) struct ContextRAII {\
-            ContextRAII(struct EngineRAII& EngineRAII): context(*RequestContextFailedAssert(EngineRAII.engine)){}\
-            ~ContextRAII(){context.Release();}\
-            asIScriptContext &context;protected:\
-            static asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite;\
-                asIScriptContext* context=0; DOCTEST_REQUIRE_MESSAGE((context = engine.RequestContext()), "failed to request AngelScript context"); return context; }\
-        } ContextRAII(EngineRAII); testsuite::asIScriptContext &name = ContextRAII.context;
+#define SERVICE_REQUEST_CONTEXT_RAII(name) struct ContextRAII {  SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(ExceptionCallback)                                           \
+            ContextRAII(struct EngineRAII& EngineRAII)                                                                                                                \
+            : context(*RequestContextFailedAssert(EngineRAII.engine)) { context.SetExceptionCallback(asFUNCTION(ExceptionCallback), 0, asCALL_CDECL); }               \
+            ~ContextRAII(){context.Release();}                                                                                                                        \
+            asIScriptContext &context;protected:                                                                                                                      \
+            static asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite;                                                 \
+                asIScriptContext* context=0; DOCTEST_REQUIRE_MESSAGE((context = engine.RequestContext()), "failed to request AngelScript context"); return context; } \
+        } ContextRAII(EngineRAII); name = ContextRAII.context;
 
 
 #define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) asIScriptFunction* name = 0;{                                                                                             \
             struct MessageCallbackRAII {                                                                                                                                                \
-                typedef struct EngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                          \
+                typedef testsuite::IEngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                     \
                 MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
                     if (EngineRAII() == &EngineRAII_t::MessageCallback) { EngineRAII(&MessageCallbackRAII::MessageCallback); }                                                          \
                 }                                                                                                                                                                       \

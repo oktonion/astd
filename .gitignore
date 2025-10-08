@@ -42,3 +42,4 @@
 .vs/*
 out/*
 std/out/*
+CMakeSettings.json
