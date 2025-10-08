@@ -28,3 +28,60 @@ int chrono_test()
   
   return 0;
 }
+
+//int chrono_duration() 
+//{
+//    // duration
+//    {
+//        std::chrono::duration<int> d0(3);
+//        std::chrono::duration<int> d1 = -d0;
+//        if(!(d0.count() == 3)) return -1;
+//        if(!(d1.count() == -3)) return -1;
+//
+//        std::chrono::duration<int> d2 = d0; // illigal operation on this data type (+d0);
+//        if(!(d2.count() == 3)) return -1;
+//
+//        std::chrono::duration<int> d3(++d2);
+//        if(!(d2.count() == 4)) return -1;
+//        if(!(d3.count() == 4)) return -1;
+//
+//        std::chrono::duration<int> d4(d3++);
+//        if(!(d3.count() == 5)) return -1;
+//        if(!(d4.count() == 4)) return -1;
+//
+//        std::chrono::duration<int> d5(--d4);
+//        if(!(d4.count() == 3)) return -1;
+//        if(!(d5.count() == 3)) return -1;
+//
+//        std::chrono::duration<int> d6(d5--);
+//        if(!(d5.count() == 2)) return -1;
+//        if(!(d6.count() == 3)) return -1;
+//    }    
+//	
+//	{
+//        std::chrono::duration<int> d0(12);
+//        std::chrono::duration<int> d1(3);
+//        int i = 3;
+//
+//        std::chrono::duration<int> d2 = d0 + d1;
+//        if(!(d2.count() == 15)) return -1;
+//
+//        std::chrono::duration<int> d3 = d0 - d1;
+//        if(!(d3.count() == 9)) return -1;
+//
+//        std::chrono::duration<int> d4 = d0 * i;
+//        if(!(d4.count() == 36)) return -1;
+//
+//        std::chrono::duration<int> d5 = i * d0;
+//        if(!(d5.count() == 36)) return -1;
+//
+//        std::chrono::duration<int> d6 = d0 / i;
+//        if(!(d6.count() == 4)) return -1;
+//
+//        int j = d0 / d1;
+//        if(!(j == 4)) return -1;
+//    } 
+//	
+//	
+//	return 0;
+//}

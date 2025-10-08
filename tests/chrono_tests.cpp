@@ -1,3 +1,5 @@
+#define ANGELSCRIPT_VERSION 23700
+
 #include "service/testsuit.h"
 
 #ifndef SCRIPTSTD_COROUTINES_H_PATH
@@ -49,6 +51,15 @@ namespace {
             SUBCASE("importing function 'int chrono_test()'")
             {
                 
+                SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
+
+                CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
+                CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
+            }
+
+            SUBCASE("importing function 'int chrono_test()'")
+            {
+
                 SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
 
                 CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
@@ -131,6 +142,6 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
         SERVICE_IMPORT_FUNCTION(chrono_and_print_test, script_path, "int chrono_and_print_test()");
 
         CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_and_print_test));
-        CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
+        CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute()); 
     }
 }
