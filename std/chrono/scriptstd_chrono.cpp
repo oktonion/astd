@@ -1264,7 +1264,6 @@ namespace astd {
             : duration<RepT>
         {
             typedef duration<RepT> duration;
-            using duration::internal;
 
             struct meta
                 : duration::meta
@@ -1291,8 +1290,8 @@ namespace astd {
             }
             static void call(asITypeInfo&, const duration& in, const duration& out, duration_cast& that) {
 
-                const typename duration::period& out_ratio = internal::ratio(out);
-                const typename duration::period& in_ratio = internal::ratio(in);
+                const typename duration::period& out_ratio = duration::internal::ratio(out);
+                const typename duration::period& in_ratio = duration::internal::ratio(in);
 
                 new (&that) duration_cast(
                     (0 == std::memcmp(&out_ratio, &in_ratio, sizeof(typename duration::period))) ? in : duration::cast(in, out_ratio)
@@ -1454,7 +1453,6 @@ namespace astd {
                         struct duration_cast_ct
                             : duration_cast
                         {
-                            using duration_cast::internal;
                             struct meta : duration_cast::meta {
 #                               define NS_NAME "%s"
 #                               define TYPE_NAME "%s"
@@ -1472,8 +1470,8 @@ namespace astd {
                             }
                             static void call(const duration& in, const duration& out, duration_cast& that) {
 
-                                const typename duration::period& out_ratio = internal::ratio(out);
-                                const typename duration::period& in_ratio = internal::ratio(in);
+                                const typename duration::period& out_ratio = duration::internal::ratio(out);
+                                const typename duration::period& in_ratio = duration::internal::ratio(in);
 
                                 new (&that) duration_cast(
                                     (0 == std::memcmp(&out_ratio, &in_ratio, sizeof(typename duration::period))) ? in : duration::cast(in, out_ratio)
