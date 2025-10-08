@@ -107,11 +107,13 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
         {
             const long translation_time_current = testsuite::strtol(TRANSLATION_HHMMSS_TIME);
             const long translation_date_current = testsuite::strtol(TRANSLATION_YYMMDD_DATE);
-            const long translation_date_deadline = 251012; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
+            const long translation_date_deadline = 261008; // as for 02.10.2025 AngelScript has bug with registering (...) functions, 
                                                            // see: https://github.com/anjo76/angelscript/issues/14#issuecomment-3355997388
-                                                           // I hope that by 12.10.2025 it would be fixed
+                                                           // by 08.10.2025 it partially fixed and I hope that in next version by 08.10.2026 it would be fixed
+            const long angelscript_ver = ANGELSCRIPT_VERSION;
 
-            if (translation_date_current < translation_date_deadline)
+            if (translation_date_current < translation_date_deadline 
+                && angelscript_ver > 23900)
             { // until bug is fixed we need to unregister 'extra' format function from `scriptstdstring` addon to continue with testing
                 asIScriptFunction* string_addon_format_func = 0;
                 REQUIRE((string_addon_format_func = asIScriptEngine->GetGlobalFunctionByDecl("string format(const string&in ,const ?&in...)")));
