@@ -143,8 +143,6 @@ namespace asdk {
 
     namespace reflection {
 
-        template<AngelScript::asEObjTypeFlags::type>
-        struct reflect;
 
         namespace type_traits
         {
@@ -152,6 +150,8 @@ namespace asdk {
             struct is_same { static const bool value = false; };
             template<class T>
             struct is_same<T,T> { static const bool value = true; };
+            typedef is_same<void, void> true_type;
+            typedef is_same<void, float> false_type;
 
             template<class IfTrueT, class IfFalseT, bool>
             struct conditional {  typedef IfTrueT type; };
@@ -160,80 +160,115 @@ namespace asdk {
 
 
 #           ifndef ASDK_FUNCTION_ARGS_TYPES
-#           define ASDK_FUNCTION_ARGS_TYPES1  class Arg0T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST1         Arg0T
-#           define ASDK_FUNCTION_ARGS_TYPES2  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST2         Arg0T            ,       Arg1T
-#           define ASDK_FUNCTION_ARGS_TYPES3  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST3         Arg0T            ,       Arg1T            ,       Arg2T
-#           define ASDK_FUNCTION_ARGS_TYPES4  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST4         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T
-#           define ASDK_FUNCTION_ARGS_TYPES5  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST5         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T
-#           define ASDK_FUNCTION_ARGS_TYPES6  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM , class Arg5T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST6         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T            ,       Arg5T
-#           define ASDK_FUNCTION_ARGS_TYPES7  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM , class Arg5T ASDK_PARAM , class Arg6T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST7         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T            ,       Arg5T            ,       Arg6T
-#           define ASDK_FUNCTION_ARGS_TYPES8  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM , class Arg5T ASDK_PARAM , class Arg6T ASDK_PARAM , class Arg7T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST8         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T            ,       Arg5T            ,       Arg6T            ,       Arg7T
-#           define ASDK_FUNCTION_ARGS_TYPES9  class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM , class Arg5T ASDK_PARAM , class Arg6T ASDK_PARAM , class Arg7T ASDK_PARAM , class Arg8T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST9         Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T            ,       Arg5T            ,       Arg6T            ,       Arg7T            ,       Arg8T
-#           define ASDK_FUNCTION_ARGS_TYPES10 class Arg0T ASDK_PARAM , class Arg1T ASDK_PARAM , class Arg2T ASDK_PARAM , class Arg3T ASDK_PARAM , class Arg4T ASDK_PARAM , class Arg5T ASDK_PARAM , class Arg6T ASDK_PARAM , class Arg7T ASDK_PARAM , class Arg8T ASDK_PARAM , class Arg9T ASDK_PARAM 
-#           define ASDK_FUNCTION_ARGS_LIST10        Arg0T            ,       Arg1T            ,       Arg2T            ,       Arg3T            ,       Arg4T            ,       Arg5T            ,       Arg6T            ,       Arg7T            ,       Arg8T            ,       Arg9T
+#           define   ASDK_FUNCTION_ARGS_TYPES_1(param_cb) class param_cb(1) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_1(param_cb)       param_cb(1)
+#           define   ASDK_FUNCTION_ARGS_TYPES_2(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_2(param_cb)       param_cb(1)            ,       param_cb(2)
+#           define   ASDK_FUNCTION_ARGS_TYPES_3(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_3(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)
+#           define   ASDK_FUNCTION_ARGS_TYPES_4(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_4(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)
+#           define   ASDK_FUNCTION_ARGS_TYPES_5(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_5(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)
+#           define   ASDK_FUNCTION_ARGS_TYPES_6(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM , class param_cb(6) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_6(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)            ,       param_cb(6)
+#           define   ASDK_FUNCTION_ARGS_TYPES_7(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM , class param_cb(6) ASDK_PARAM , class param_cb(7) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_7(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)            ,       param_cb(6)            ,       param_cb(7)
+#           define   ASDK_FUNCTION_ARGS_TYPES_8(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM , class param_cb(6) ASDK_PARAM , class param_cb(7) ASDK_PARAM , class param_cb(8) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_8(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)            ,       param_cb(6)            ,       param_cb(7)            ,       param_cb(8)
+#           define   ASDK_FUNCTION_ARGS_TYPES_9(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM , class param_cb(6) ASDK_PARAM , class param_cb(7) ASDK_PARAM , class param_cb(8) ASDK_PARAM , class param_cb(9) ASDK_PARAM 
+#           define    ASDK_FUNCTION_ARGS_LIST_9(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)            ,       param_cb(6)            ,       param_cb(7)            ,       param_cb(8)            ,       param_cb(9)
+#           define  ASDK_FUNCTION_ARGS_TYPES_10(param_cb) class param_cb(1) ASDK_PARAM , class param_cb(2) ASDK_PARAM , class param_cb(3) ASDK_PARAM , class param_cb(4) ASDK_PARAM , class param_cb(5) ASDK_PARAM , class param_cb(6) ASDK_PARAM , class param_cb(7) ASDK_PARAM , class param_cb(8) ASDK_PARAM , class param_cb(9) ASDK_PARAM , class param_cb(10) ASDK_PARAM 
+#           define   ASDK_FUNCTION_ARGS_LIST_10(param_cb)       param_cb(1)            ,       param_cb(2)            ,       param_cb(3)            ,       param_cb(4)            ,       param_cb(5)            ,       param_cb(6)            ,       param_cb(7)            ,       param_cb(8)            ,       param_cb(9)            ,       param_cb(10)
 
-#           define ASDK_FUNCTION_ARGS_TYPES(N) ASDK_CAT(ASDK_FUNCTION_ARGS_TYPES, ASDK_WRAP(N))
-#           define ASDK_FUNCTION_ARGS_LIST(N) ASDK_CAT(ASDK_FUNCTION_ARGS_LIST, ASDK_WRAP(N))
+#           define ASDK_FUNCTION_ARGS_TYPES_CB(N,param_cb) ASDK_CAT(ASDK_FUNCTION_ARGS_TYPES_, ASDK_WRAP(N))(param_cb)
+#           define ASDK_FUNCTION_ARGS_LIST_CB(N,param_cb)  ASDK_CAT(ASDK_FUNCTION_ARGS_LIST_,  ASDK_WRAP(N))(param_cb)
+#           define ASDK_FUNCTION_ARGS_TYPES(N) ASDK_FUNCTION_ARGS_TYPES_CB(N,ASDK_PARAM_T)
+#           define ASDK_FUNCTION_ARGS_LIST(N)  ASDK_FUNCTION_ARGS_LIST_CB(N,ASDK_PARAM_T)
+#           define ASDK_PARAM_T(N) Arg##N##T
 #           define ASDK_PARAM
 #           endif // ASDK_FUNCTION_ARGS_TYPES
 
 
 
-            template<class ReturnT
-                , class Arg0T = void, class Arg1T = void, class Arg2T = void, class Arg3T = void, class Arg4T = void
-                , class Arg5T = void, class Arg6T = void, class Arg7T = void, class Arg8T = void, class Arg9T = void
+            template<class ClassT, class ReturnT = void
+#           undef ASDK_PARAM
+#           define ASDK_PARAM =struct unused_arg
+                , ASDK_FUNCTION_ARGS_TYPES(10)
+#           undef ASDK_PARAM
+#           define ASDK_PARAM
             >
             struct function_traits_storage {
                 typedef ReturnT return_type;
-                typedef Arg0T arg0_type; typedef Arg1T arg1_type; typedef Arg2T arg2_type; typedef Arg3T arg3_type; typedef Arg4T arg4_type;
-                typedef Arg5T arg5_type; typedef Arg6T arg6_type; typedef Arg7T arg7_type; typedef Arg8T arg8_type; typedef Arg9T arg9_type;
+                typedef ClassT class_type;
+                typedef Arg1T arg1_type; typedef Arg2T arg2_type; typedef Arg3T arg3_type; typedef Arg4T arg4_type; typedef Arg5T arg5_type;
+                typedef Arg6T arg6_type; typedef Arg7T arg7_type; typedef Arg8T arg8_type; typedef Arg9T arg9_type; typedef Arg10T arg10_type;
             };
 
             template<class FunctionTraitsStorage>
             struct arg_last { typedef void type; };
 
+#           ifndef ASDK_ARG_LAST_IMPL
+
+#           define ASDK_ARG_LAST_IMPL(N)                                               \
+            template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(N)>         \
+            struct arg_last<                                                           \
+                function_traits_storage< ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(N) > \
+            > { typedef Arg##N##T type; }
+
+            ASDK_ARG_LAST_IMPL(10); ASDK_ARG_LAST_IMPL(9); ASDK_ARG_LAST_IMPL(8); ASDK_ARG_LAST_IMPL(7); ASDK_ARG_LAST_IMPL(6);
+            ASDK_ARG_LAST_IMPL(5);  ASDK_ARG_LAST_IMPL(4); ASDK_ARG_LAST_IMPL(3); ASDK_ARG_LAST_IMPL(2); ASDK_ARG_LAST_IMPL(1);
+
+#           undef ASDK_ARG_LAST_IMPL
+#           endif
+
+            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2>
+            struct function_traits_storage_add
+            {
+
+            };
+
             template<
-                  class Arg0T , class Arg1T , class Arg2T , class Arg3T , class Arg4T 
-                , class Arg5T , class Arg6T , class Arg7T , class Arg8T , class Arg9T 
+                ASDK_FUNCTION_ARGS_TYPES(5),
+                class FunctionTraitsStorage2
             >
-            struct arg_last<
-                function_traits_storage<
-                      Arg0T, Arg1T, Arg2T, Arg3T, Arg4T
-                    , Arg5T, Arg6T, Arg7T, Arg8T, Arg9T
-                >
-            > 
-            { typedef Arg9T type; };
+            struct function_traits_storage_add <
+                function_traits_storage<ASDK_FUNCTION_ARGS_LIST(5)>,
+                FunctionTraitsStorage2
+            >
+            {
+                typedef function_traits_storage<
+                    ASDK_FUNCTION_ARGS_LIST(5), 
+#                   undef ASDK_PARAM_T
+#                   define ASDK_PARAM_T(N) typename FunctionTraitsStorage2::arg##N##_type
+                    ASDK_FUNCTION_ARGS_LIST(5)
+#                   undef ASDK_PARAM_T
+#                   define ASDK_PARAM_T(N) Arg##N##T
+                > type;
+            };
+
 
             template<class FuncT>
             struct function_traits : function_traits_storage<void> {};
 
             template<class ReturnT>
-            struct function_traits<ReturnT(*)()> : function_traits_storage<ReturnT>{};
+            struct function_traits<ReturnT(*)()> : function_traits_storage<void, ReturnT>{};
             template<class ClassT, class ReturnT>
-            struct function_traits<ReturnT(ClassT::*)()> : function_traits_storage<ReturnT> {};
+            struct function_traits<ReturnT(ClassT::*)()> : function_traits_storage<ClassT, ReturnT> {};
             template<class ClassT, class ReturnT>
-            struct function_traits<ReturnT(ClassT::*)() const> : function_traits_storage<ReturnT> {};
+            struct function_traits<ReturnT(ClassT::*)() const> : function_traits_storage<ClassT, ReturnT> {};
 #           ifndef ASDK_FUNCTION_TRAITS
 
-#           define ASDK_FUNCTION_TRAITS                                                                    \
-            template<class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                        \
-            struct function_traits<ReturnT(*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>              \
-            : function_traits_storage<ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};          \
-            template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>          \
-            struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>      \
-                : function_traits_storage<ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};      \
-            template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>          \
-            struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)) const>\
-                : function_traits_storage<ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};     
+#           define ASDK_FUNCTION_TRAITS                                                                           \
+            template<class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                               \
+            struct function_traits<ReturnT(*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>                     \
+            : function_traits_storage<void, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};           \
+            template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                 \
+            struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>             \
+                : function_traits_storage<ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};     \
+            template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                 \
+            struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)) const>       \
+                : function_traits_storage<const ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};     
 
 #           define ASDK_FUNCTION_ARGS_N 1
                 ASDK_FUNCTION_TRAITS
@@ -298,42 +333,49 @@ namespace asdk {
 #           undef ASDK_PARAM
 #           endif // ASDK_FUNCTION_ARGS_TYPES
 
-            template<bool 
-                , bool, bool, bool, bool, bool
-                , bool, bool, bool, bool, bool
-            > struct is_all_same : is_same<void, int> {};
+            template<bool = true
+                , bool = true, bool = true, bool = true, bool = true, bool = true
+                , bool = true, bool = true, bool = true, bool = true, bool = true
+                , bool = true, bool = true, bool = true, bool = true, bool = true
+                , bool = true, bool = true, bool = true, bool = true, bool = true
+            > struct is_all_same : false_type {};
             template<> struct is_all_same<true
                 , true, true, true, true, true
                 , true, true, true, true, true
-            >: is_same<void, void> {};
+                , true, true, true, true, true
+                , true, true, true, true, true
+            >: true_type {};
 
             template<class Func1T, class Func2T, bool>
-            struct is_compatible_function_impl { typedef is_same<Func1T, Func2T> is_same_type; };
+            struct is_compatible_function_args_impl { typedef true_type is_same_type; };
             template<class Func1T, class Func2T>
-            struct is_compatible_function_impl<Func1T, Func2T, false> {
+            struct is_compatible_function_args_impl<Func1T, Func2T, false> {
                 typedef function_traits<Func1T> func1_traits;
                 typedef function_traits<Func2T> func2_traits;
                 typedef is_all_same < is_same<typename func1_traits::return_type, typename func2_traits::return_type>::value == bool(true)
 #                   define ASDK_IS(N) is_same<typename func1_traits::arg##N##_type, typename func2_traits::arg##N##_type>::value == bool(true)
-                    , ASDK_IS(0), ASDK_IS(1), ASDK_IS(2), ASDK_IS(3), ASDK_IS(4)
-                    , ASDK_IS(5), ASDK_IS(6), ASDK_IS(7), ASDK_IS(8), ASDK_IS(9)
+                    , ASDK_IS(1), ASDK_IS(2), ASDK_IS(3), ASDK_IS(4), ASDK_IS(5)
+                    , ASDK_IS(6), ASDK_IS(7), ASDK_IS(8), ASDK_IS(9), ASDK_IS(10)
 #                   undef ASDK_IS
                 > is_same_type;
             };
 
             template<class Func1T, class Func2T>
-            struct is_compatible_function : 
-                is_compatible_function_impl<Func1T, Func2T, is_same<Func1T, Func2T>::value == bool(true)>::is_same_type {};
+            struct is_compatible_function_args :
+                is_compatible_function_args_impl<Func1T, Func2T, is_same<Func1T, Func2T>::value == bool(true)>::is_same_type {};
         }
+
+        template<class T, AngelScript::asEObjTypeFlags::type>
+        struct reflect;
 
         // template_callback
         namespace type_traits {
             template<class FuncT, class ReflectionT>
             struct template_callback {
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool&)> is_compatible_with1;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with2;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with3;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo*, bool*)> is_compatible_with4;
+                typedef is_compatible_function_args<FuncT, bool(*)(asITypeInfo&, bool&)> is_compatible_with1;
+                typedef is_compatible_function_args<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with2;
+                typedef is_compatible_function_args<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with3;
+                typedef is_compatible_function_args<FuncT, bool(*)(asITypeInfo*, bool*)> is_compatible_with4;
                 typedef 
                 typename
                 conditional<ReflectionT, void,
@@ -348,69 +390,80 @@ namespace asdk {
 
         // constructor
         namespace type_traits {
-            template<class FuncT, class ReflectionT>
-            struct constructor{
-                typedef function_traits<FuncT> func_traits_type;
-                typedef typename func_traits_type::arg0_type arg0_type;
-                typedef typename func_traits_type::argN_type argN_type;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool&)> is_compatible_with1;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with2;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo&, bool*)> is_compatible_with3;
-                typedef is_compatible_function<FuncT, bool(*)(asITypeInfo*, bool*)> is_compatible_with4;
+            template<class ClassT, class FuncT, class ReflectionT, class DeclT = void(*)()>
+            struct constructor {
+                typedef function_traits<DeclT> decl_traits_type;
+                typedef unused_arg CallingClassT;
+
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT&)> is_compatible_with_cdecl_or_thiscall1;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT*)> is_compatible_with_cdecl_or_thiscall2;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT*)> is_compatible_with_cdecl_or_thiscall3;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo*, ClassT*)> is_compatible_with_cdecl_or_thiscall4;
+                typedef is_all_same<
+                      is_compatible_with_cdecl_or_thiscall1::value == bool(true)
+                    , is_compatible_with_cdecl_or_thiscall2::value == bool(true)
+                    , is_compatible_with_cdecl_or_thiscall3::value == bool(true)
+                    , is_compatible_with_cdecl_or_thiscall4::value == bool(true)
+                > is_compatible_with_cdecl_or_thiscall;
+
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT&, CallingClassT)> is_compatible_with_cdecl_objlast1;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT*, CallingClassT)> is_compatible_with_cdecl_objlast2;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo&, ClassT*, CallingClassT)> is_compatible_with_cdecl_objlast3;
+                typedef is_compatible_function_args<FuncT, void(*)(asITypeInfo*, ClassT*, CallingClassT)> is_compatible_with_cdecl_objlast4;
+                typedef is_all_same<
+                      is_compatible_with_cdecl_objlast1::value == bool(true)
+                    , is_compatible_with_cdecl_objlast2::value == bool(true)
+                    , is_compatible_with_cdecl_objlast3::value == bool(true)
+                    , is_compatible_with_cdecl_objlast4::value == bool(true)
+                > is_compatible_with_cdecl_objlast;
+
+                typedef is_compatible_function_args<FuncT, void(*)(CallingClassT, asITypeInfo&, ClassT&)> is_compatible_with_cdecl_objfirst1;
+                typedef is_compatible_function_args<FuncT, void(*)(CallingClassT, asITypeInfo&, ClassT*)> is_compatible_with_cdecl_objfirst2;
+                typedef is_compatible_function_args<FuncT, void(*)(CallingClassT, asITypeInfo&, ClassT*)> is_compatible_with_cdecl_objfirst3;
+                typedef is_compatible_function_args<FuncT, void(*)(CallingClassT, asITypeInfo*, ClassT*)> is_compatible_with_cdecl_objfirst4;
+                typedef is_all_same<
+                      is_compatible_with_cdecl_objfirst1::value == bool(true)
+                    , is_compatible_with_cdecl_objfirst2::value == bool(true)
+                    , is_compatible_with_cdecl_objfirst3::value == bool(true)
+                    , is_compatible_with_cdecl_objfirst4::value == bool(true)
+                > is_compatible_with_cdecl_objfirst;
+
                 typedef 
                 typename
                 conditional<ReflectionT, void,
-                    is_compatible_with1::value == bool(true) ||
-                    is_compatible_with2::value == bool(true) ||
-                    is_compatible_with3::value == bool(true) ||
-                    is_compatible_with4::value == bool(true)
+                    is_compatible_with_cdecl_or_thiscall::value == bool(true) ||
+                    is_compatible_with_cdecl_objlast::value == bool(true) ||
+                    is_compatible_with_cdecl_objfirst::value == bool(true)
                 >::type type;
-            };
 
-            template<class ClassT, class ReflectionT>
-            struct constructor<void(*)(asITypeInfo&, ClassT&), ReflectionT> {
-                typedef ReflectionT type;
-                typedef void arg0_type;
+                typedef function_traits<FuncT> func_traits_type;
+                typedef typename func_traits_type::class_type class_type;
+                typedef typename func_traits_type::arg1_type arg1_type;
+                typedef typename arg_last<func_traits_type>::type argN_type;
+
+                typedef 
+                typename
+                conditional<is_same<class_type, void>, false_type,
+                    is_compatible_with_cdecl_or_thiscall::value == bool(true)
+                >::type is_compatible_with_thiscall;
+
+                typedef 
+                typename
+                conditional<arg1_type, argN_type,
+                    is_compatible_with_cdecl_objfirst::value == bool(true) &&
+                    is_compatible_with_cdecl_or_thiscall::value == bool(false)
+                >::type thiscall_obj_type;
+
+                typedef 
+                typename
+                conditional<class_type, thiscall_obj_type,
+                    is_compatible_with_thiscall::value == bool(true)
+                >::type obj_type;
             };
-            template<class ClassT, class ReflectionT> struct constructor<void(*)(asITypeInfo&, ClassT&), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class ReflectionT> struct constructor<void(*)(asITypeInfo&, ClassT*), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class ReflectionT> struct constructor<void(*)(asITypeInfo*, ClassT*), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT>
-            struct constructor<void(T::*)(asITypeInfo&, ClassT&), ReflectionT> {
-                typedef ReflectionT type;
-                typedef T* arg0_type;
-            };
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo&, ClassT&), ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo&, ClassT*), ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo*, ClassT*), ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT>
-            struct constructor<void(T::*)(asITypeInfo&, ClassT&) const, ReflectionT> {
-                typedef ReflectionT type;
-                typedef const T* arg0_type;
-            };
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo&, ClassT&) const, ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&) const, ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo&, ClassT*) const, ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&) const, ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(T::*)(asITypeInfo*, ClassT*) const, ReflectionT> : constructor<void(T::*)(asITypeInfo&, ClassT&) const, ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT>
-            struct constructor<void(*)(T*, asITypeInfo&, ClassT&), ReflectionT> {
-                typedef ReflectionT type;
-                typedef T* arg0_type;
-            };
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(T*, asITypeInfo&, ClassT&), ReflectionT> : constructor<void(*)(T*, asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(T*, asITypeInfo&, ClassT*), ReflectionT> : constructor<void(*)(T*, asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(T*, asITypeInfo*, ClassT*), ReflectionT> : constructor<void(*)(T*, asITypeInfo&, ClassT&), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT>
-            struct constructor<void(*)(asITypeInfo&, ClassT&, T*), ReflectionT> {
-                typedef ReflectionT type;
-                typedef T* arg0_type;
-            };
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(asITypeInfo&, ClassT&, T*), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&, T*), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(asITypeInfo&, ClassT*, T*), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&, T*), ReflectionT> {};
-            template<class ClassT, class T, class ReflectionT> struct constructor<void(*)(asITypeInfo*, ClassT*, T*), ReflectionT> : constructor<void(*)(asITypeInfo&, ClassT&, T*), ReflectionT> {};
         }
 
-        template<>
-        struct reflect<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
+        template<class T>
+        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
         {
             typedef AngelScript::asITypeInfo asITypeInfo;
             reflect(const std::string& name) {}
@@ -420,18 +473,27 @@ namespace asdk {
             template_callback(FuncT func) {}
             template<class FuncT> 
             typename type_traits::template_callback<FuncT, reflect>::type
-            template_callback(FuncT func, type_traits::template_callback<FuncT, reflect>::arg0_type obj) {}
-            
+            template_callback(FuncT func, typename type_traits::template_callback<FuncT, reflect>::obj_type obj) {}
+
             template<class FuncT> 
-            typename type_traits::constructor<FuncT, reflect>::type
+            typename type_traits::constructor<T, FuncT, reflect>::type
             constructor(FuncT func) {}
             template<class FuncT> 
-            typename type_traits::template_callback<FuncT, reflect>::type
-            constructor(FuncT func, type_traits::constructor<FuncT, reflect>::arg0_type obj) {}
-
-            
+            typename type_traits::constructor<T, FuncT, reflect>::type
+            constructor(FuncT func, typename type_traits::constructor<T, FuncT, reflect>::obj_type obj) {}
+            template<class FuncT, class Arg1T> 
+            typename type_traits::constructor<T, FuncT, reflect>::type
+            constructor(FuncT func) {}
+            template<class FuncT, class Arg1T>
+            typename type_traits::constructor<T, FuncT, reflect>::type
+            constructor(FuncT func, typename type_traits::constructor<T, FuncT, reflect>::obj_type obj) {}
         };
-        typedef reflect<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> reflect_template;
+        template<class T> struct reflect_template 
+            : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> 
+        {
+            typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
+            reflect_template(const std::string& name): underlying_type(name) {}
+        };
 
     }
 }
@@ -441,6 +503,7 @@ namespace asdk {
     using namespace asdk::reflection;
 }
 
+#undef ASDK_ARG
 #undef ASDK_WRAP
 #undef ASDK_CAT3
 #undef ASDK_CAT2
