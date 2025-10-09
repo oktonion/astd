@@ -53,13 +53,13 @@ namespace astd {
         struct asType {
             asITypeInfo* type_info;
             int type_id;
-            asType() : type_info(0), type_id(asETypeIdFlags::asTYPEID_APPOBJECT) {}
+            asType() : type_info(0), type_id(asTYPEID_APPOBJECT) {}
             bool is_class() const { return !!type_info; }
             bool is_void() const { return asTYPEID_VOID == type_id; }
             bool is_arithmetic() const { if (is_class()) return false; return type_id > asTYPEID_VOID && type_id < asTYPEID_DOUBLE; }
 
             bool operator!() const {
-                return !type_info && (asETypeIdFlags::asTYPEID_APPOBJECT == type_id || type_id < 0) ;
+                return !type_info && (asTYPEID_APPOBJECT == type_id || type_id < 0) ;
             }
 
             const char* name() const {
@@ -474,7 +474,7 @@ namespace astd {
                     if (meta::duration_void_cast_const_cstr())
                     r = engine.RegisterObjectMethod(
                         type_cstr, 
-                        (sprintf(buffer, meta::duration_void_cast_const_cstr(), duration_tmpl_ns), buffer),
+                        (sprintf(buffer, meta::duration_void_cast_const_cstr(), duration_tmpl_ns.cstr), buffer),
                         asFUNCTION(&type::duration_void_cast),
                         asCALL_CDECL_OBJFIRST
                     ); if (r < 0) return false;
@@ -852,14 +852,14 @@ namespace astd {
 
                     r = engine.RegisterObjectMethod(
                         type_cstr, 
-                        (sprintf(buffer, type::meta::duration_cast_cstr(), duration_tmpl_ns, subtype_cstr), buffer),
+                        (sprintf(buffer, type::meta::duration_cast_cstr(), duration_tmpl_ns.cstr, subtype_cstr), buffer),
                         asFUNCTION(&type::duration_cast),
                         asCALL_CDECL_OBJFIRST
                     ); if (r < 0) return false;
 
                     r = engine.RegisterObjectMethod(
                         type_cstr,
-                        (sprintf(buffer, type::meta::duration_cast_const_cstr(), duration_tmpl_ns, subtype_cstr), buffer),
+                        (sprintf(buffer, type::meta::duration_cast_const_cstr(), duration_tmpl_ns.cstr, subtype_cstr), buffer),
                         asFUNCTION(&type::duration_cast),
                         asCALL_CDECL_OBJFIRST
                     ); if (r < 0) return false;
@@ -895,7 +895,7 @@ namespace astd {
                     r = engine.RegisterObjectBehaviour(
                         type_cstr,
                         asBEHAVE_CONSTRUCT, 
-                        (sprintf(buffer, type::meta::ctor_duration_cstr(), duration_tmpl_ns, subtype_cstr), buffer),
+                        (sprintf(buffer, type::meta::ctor_duration_cstr(), duration_tmpl_ns.cstr, subtype_cstr), buffer),
                         asFUNCTIONPR(type::ctor, (const type::duration&, type&), void), asCALL_CDECL_OBJLAST
                     ); if (r < 0) return false;
 
@@ -1567,7 +1567,7 @@ namespace astd {
                             r = engine.RegisterObjectMethod(
                                 type_str.c_str(),
                                 meta::count_cstr(buffer, static_cast<astd::subtype_cstr>(RepT_type.name())),
-                                asMETHOD(type, count), asCALL_THISCALL
+                                asMETHOD(duration_cast, count), asCALL_THISCALL
                             ); assert(r >= 0);
                         }
                     }
