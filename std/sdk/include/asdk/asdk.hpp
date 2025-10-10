@@ -158,6 +158,9 @@ namespace asdk {
             template<class IfTrueT, class IfFalseT>
             struct conditional<IfTrueT, IfFalseT, false> { typedef IfFalseT type; };
 
+            template<class T>
+            T declval();
+
 
 #           ifndef ASDK_FUNCTION_ARGS_TYPES
 #           define   ASDK_FUNCTION_ARGS_TYPES_1(param_cb) class param_cb(1) ASDK_PARAM 
@@ -553,7 +556,7 @@ namespace asdk {
             constructor(FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect>::obj_type obj) {}
 
             template<class Arg1T>
-            reflect
+            typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(T(type_traits::declval<Arg1T>())) == sizeof(T)>::type
             constructor(const std::string& arg1_str) { return constructor(arg1_str, type_traits::constructor<ObjType, T, void(*)(Arg1T), reflect, void(*)(Arg1T)>::ctor); }
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
