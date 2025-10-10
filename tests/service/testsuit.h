@@ -309,7 +309,7 @@ namespace testsuite {
         } ContextRAII(EngineRAII); name = ContextRAII.context;
 
 
-#define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) asIScriptFunction* name = 0;{                                                                                             \
+#define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) testsuite::AngelScript::asIScriptFunction* name = 0;{                                                                     \
             struct MessageCallbackRAII {                                                                                                                                                \
                 typedef testsuite::IEngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                     \
                 MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
@@ -319,7 +319,8 @@ namespace testsuite {
                     if (EngineRAII() == &MessageCallbackRAII::MessageCallback) { EngineRAII(&EngineRAII_t::MessageCallback); }                                                          \
                 }                                                                                                                                                                       \
             } MessageCallbackRAII(EngineRAII); using namespace testsuite; asIScriptModule *asIScriptModule = 0;                                                                         \
-            CScriptBuilder CScriptBuilder; asIScriptEngine *asIScriptEngine = &EngineRAII.engine; const std::string moduleName = module_cstr; const std::string decl = decl_cstr;       \
+            testsuite::AngelScript::CScriptBuilder CScriptBuilder; testsuite::AngelScript::asIScriptEngine *asIScriptEngine = &EngineRAII.engine;                                       \
+            const std::string moduleName = module_cstr; const std::string decl = decl_cstr;                                                                                             \
             DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName); \
             DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.AddSectionFromFile(moduleName.c_str()), "CScriptBuilder::AddSectionFromFile: cannot load script from: " + moduleName);          \
             DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.BuildModule(), "CScriptBuilder::BuildModule: script has errors: " + moduleName);                                                \
