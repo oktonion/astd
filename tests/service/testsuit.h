@@ -328,4 +328,11 @@ namespace testsuite {
             DOCTEST_REQUIRE_MESSAGE((name = asIScriptModule->GetFunctionByDecl(decl.c_str())), "asIScriptModule::GetFunctionByDecl: cannot find function: " + decl);                    \
         }
 
+#include <cstdio>
+#define SERVICE_FILE_RAII struct SERVICE_CONCAT(FileRAII, __LINE__){ \
+             SERVICE_CONCAT(FileRAII, __LINE__)(std::string name):name(name) {}\
+            ~SERVICE_CONCAT(FileRAII, __LINE__)() {std::remove(static_cast<std::string>(name).c_str());}\
+            private: std::string name;\
+        }SERVICE_CONCAT(FileRAII, __LINE__)
+
 #endif // SERVICE_TESTSUITE_H
