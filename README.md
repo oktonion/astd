@@ -14,7 +14,7 @@ master   | [![C/C++ CI](https://github.com/oktonion/astd/actions/workflows/c-cpp
 
 Lets start with small piece of AngelScript code:
 
-__script.as
+__script.as__
 ```cpp
 int chrono_and_print_test() {
       std::chrono::system_clock::time_point begin_sys = std::chrono::system_clock::now();
