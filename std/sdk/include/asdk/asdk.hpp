@@ -104,39 +104,172 @@ namespace asdk {
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asOBJ_IMPLICIT_HANDLE;
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asOBJ_APP_CLASS_UNION;
         } using namespace asEObjTypeFlags;
+
+        // Behaviours
+        namespace asEBehaviours
+        {
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asEBehaviours;
+            typedef asEBehaviours type;
+            // Value object memory management
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_CONSTRUCT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_CONSTRUCT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_DESTRUCT;
+            // Reference object memory management
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FACTORY;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_FACTORY;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ADDREF;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASE;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG;
+            // Object operators
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK;
+            // Garbage collection behaviours
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FIRST_GC;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETREFCOUNT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_SETGCFLAG;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETGCFLAG;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ENUMREFS;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASEREFS;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LAST_GC;
+
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_MAX;
+        } using namespace asEBehaviours;
+
+        // Calling conventions
+        namespace asECallConvTypes
+        {
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asECallConvTypes;
+            typedef asECallConvTypes type;
+
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_STDCALL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL_OBJLAST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL_OBJFIRST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_GENERIC;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJLAST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        } using namespace asECallConvTypes;
     }
-
-    // Behaviours
-    namespace asEBehaviours
-    {
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asEBehaviours;
-        typedef asEBehaviours type;
-        // Value object memory management
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_CONSTRUCT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_CONSTRUCT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_DESTRUCT;
-        // Reference object memory management
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FACTORY;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_FACTORY;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ADDREF;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASE;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG;
-        // Object operators
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK;
-        // Garbage collection behaviours
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FIRST_GC;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETREFCOUNT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_SETGCFLAG;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETGCFLAG;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ENUMREFS;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASEREFS;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LAST_GC;
-
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_MAX;
-    } using namespace asEBehaviours;
 }
 
 #include <string>
+#include <stdexcept>
+
+// AngelScript SDK Exposing aka exporting C++ interface to script 
+namespace asdk {
+    namespace exposing {
+
+        struct expose {
+
+            typedef enum asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef enum asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef enum asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asSFuncPtr asSFuncPtr; 
+            typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
+            typedef asdk::AngelScript::asITypeInfo asITypeInfo;
+            
+            expose(asIScriptEngine& engine, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj()   , objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flags)
+                : engine(&engine), obj(obj), objSize(objSize), decl()    , func(func), callConv()        , flags(flags) {
+                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
+                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+            }
+            expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asEBehaviours beh, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(beh) {}
+
+            expose(const expose& other)
+                : engine(other.engine), obj(other.obj), objSize(other.objSize), decl(other.decl), func(other.func), callConv(other.callConv), flags(other.flags)
+            {
+                other.engine = 0;
+            }
+
+            ~expose() {
+                if (!engine) return;
+
+                struct lambdas {
+                    static void throw_an_error(const std::string& message) {
+                        throw(std::logic_error(message.c_str()));
+                    }
+                    
+                };
+
+                if (obj.empty())
+                {
+                    if (0 > engine->RegisterGlobalFunction(decl.c_str(), func, callConv))
+                        lambdas::throw_an_error("RegisterGlobalFunction");
+                }
+                else
+                {
+                    if (decl.empty())
+                    {
+                        if (asQWORD(-1) == flags) flags = 0;
+
+                        if (0 != (flags & asOBJ_APP_CLASS))
+                        {
+                            if (0 > engine->RegisterObjectType(obj.c_str(), objSize, flags))
+                                lambdas::throw_an_error("RegisterObjectType");
+                        }
+                        else
+                            lambdas::throw_an_error("Not Implemented");
+                    }
+                    else
+                    {
+                        if (asQWORD(-1) == flags)
+                        {
+                            if (0 > engine->RegisterObjectMethod(obj.c_str(), decl.c_str(), func, callConv))
+                                lambdas::throw_an_error("RegisterObjectMethod");
+                        }
+                        else
+                        {
+                            const asEBehaviours beh = static_cast<asEBehaviours>(flags);
+
+                            if (0 > engine->RegisterObjectBehaviour(obj.c_str(), beh, decl.c_str(), func, callConv))
+                                lambdas::throw_an_error("RegisterObjectBehaviour");
+                        }
+                    }
+                }
+            }
+
+        private:
+            mutable asIScriptEngine* engine;
+            std::string obj;
+            int objSize;
+            std::string decl;
+            asSFuncPtr func;
+            asECallConvTypes callConv;
+            asQWORD flags;
+        };
+        
+    }
+    using namespace exposing;
+}
+
+#include <string>
+#include <stdexcept>
+
+// AngelScript SDK Introducing aka importing script interface to C++
+namespace asdk {
+    namespace introducing {
+
+        struct introduce {
+
+            typedef enum asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef enum asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef enum asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asSFuncPtr asSFuncPtr;
+            typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
+            typedef asdk::AngelScript::asITypeInfo asITypeInfo;
+        };
+
+    }
+}
+
+#include <string>
+#include <vector>
 
 // AngelScript SDK Reflection
 namespace asdk {
@@ -448,19 +581,19 @@ namespace asdk {
 
                 struct cdecl_objlast {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT&, CallingClassT>,
+                        function_traits_storage<void, void, asITypeInfo&, CallingClassT, ClassT&>,
                         decl_traits_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT*, CallingClassT>,
+                        function_traits_storage<void, void, asITypeInfo&, CallingClassT, ClassT*>,
                         decl_traits_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT&, CallingClassT>,
+                        function_traits_storage<void, void, asITypeInfo*, CallingClassT, ClassT&>,
                         decl_traits_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT*, CallingClassT>,
+                        function_traits_storage<void, void, asITypeInfo*, CallingClassT, ClassT*>,
                         decl_traits_storage
                     >::type storage4;
 
@@ -480,19 +613,19 @@ namespace asdk {
 
                 struct cdecl_objfirst {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo&, ClassT&>,
+                        function_traits_storage<void, void, ClassT&, asITypeInfo&, CallingClassT>,
                         decl_traits_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo&, ClassT*>,
+                        function_traits_storage<void, void, ClassT*, asITypeInfo&, CallingClassT>,
                         decl_traits_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo*, ClassT&>,
+                        function_traits_storage<void, void, ClassT&, asITypeInfo*, CallingClassT>,
                         decl_traits_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo*, ClassT*>,
+                        function_traits_storage<void, void, ClassT*, asITypeInfo*, CallingClassT>,
                         decl_traits_storage
                     >::type storage4;
 
@@ -542,7 +675,7 @@ namespace asdk {
                     is_compatible_with_thiscall::value == bool(true)
                 >::type obj_type;
             };
-        }      
+        }
 
         // function
         namespace type_traits {
@@ -631,16 +764,61 @@ namespace asdk {
         struct reflect
         {
             typedef AngelScript::asITypeInfo asITypeInfo;
-            reflect(const std::string& name) {}
+            typedef enum AngelScript::asECallConvTypes::type asECallConvTypes;
+
+            reflect(const std::string& name, AngelScript::asIScriptEngine &asIScriptEngine) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init();
+            }
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init();
+            }
             
             typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(T()) == sizeof(T)>::type
-            constructor() { return *this; }
+            constructor() { 
+                struct lambdas_tmpl {
+                    static void ctor(T& that, asITypeInfo& ti) // objfirst
+                    { new (&that) T(); }
+                };
+                struct lambdas {
+                    static void ctor(T& that) // objfirst
+                    { new (&that) T(); }
+                };
+                enum {isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) };
+                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+                const AngelScript::asSFuncPtr asFunc = isTemplate != 0 ? asFUNCTION(lambdas_tmpl::ctor) : asFUNCTION(lambdas::ctor);
+                asdk::expose expose(*asIScriptEngine, name.c_str(), ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL_CDECL_OBJFIRST);
+                return *this; 
+            }
             template<class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect>::type
-            constructor(FuncT func) { return *this; }
+            constructor(FuncT func) {
+                enum {isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) };
+                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+                
+                typedef type_traits::constructor<ObjType, T, FuncT, reflect> ctor_traits;
+                const asECallConvTypes asCALL =
+                    ctor_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                    ctor_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL;
+                asdk::expose expose(*asIScriptEngine, name.c_str(), ctor_cstr, asBEHAVE_CONSTRUCT, asFUNCTION(func), asCALL);
+                return *this; 
+            }
             template<class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect>::type
-            constructor(FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect>::obj_type obj) { return *this; }
+            constructor(FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect>::obj_type obj) {
+                enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) };
+                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+
+                typedef type_traits::constructor<ObjType, T, FuncT, reflect> ctor_traits;
+                typedef typename ctor_traits::obj_type obj_type;
+                const asECallConvTypes asCALL =
+                    ctor_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                    ctor_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL; 
+                const AngelScript::asSFuncPtr asFunc = asSMethodPtr<sizeof(void (obj_type::*)())>::Convert((void (obj_type::*)())(func));
+                asdk::expose expose(*asIScriptEngine, name.c_str(), ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                return *this;
+            }
 
             template<class Arg1T>
             typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(T(type_traits::declval<Arg1T>())) == sizeof(T)>::type
@@ -670,15 +848,28 @@ namespace asdk {
             function(const std::string& func_str, const std::string& arg1_str, FuncT func, typename type_traits::function<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::obj_type obj = 0) { return *this; }
 
             reflect destructor() { return *this; }
+
+        private:
+            AngelScript::asIScriptEngine* asIScriptEngine;
+            std::string name;
+            std::vector<asdk::expose> entities;
+
+        protected:
+            //void expose(const asdk::expose& entity) { entities.push_back(entity); }
+            void init()
+            {
+                asdk::expose expose(*asIScriptEngine, name.c_str(), sizeof(T), ObjType);
+            }
         };
 
         template<class T>
         struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
-            : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS>
+            : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)>
         {
-            typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS> underlying_type;
+            typedef reflect<T, AngelScript::asEObjTypeFlags::type(asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
             
-            reflect(const std::string& name): underlying_type(name) {}
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine) : underlying_type(name, asIScriptEngine) {}
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
             
             template<class FuncT> 
             typename type_traits::template_callback<FuncT, reflect>::type
@@ -692,7 +883,8 @@ namespace asdk {
             : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> 
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
-            reflect_template(const std::string& name): underlying_type(name) {}
+            reflect_template(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine): underlying_type(name, asIScriptEngine) {}
+            reflect_template(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
         };
 
     }
@@ -701,6 +893,7 @@ namespace asdk {
 namespace asdk {
 
     using namespace asdk::reflection;
+    using namespace asdk::exposing;
 }
 
 #undef ASDK_ARG
