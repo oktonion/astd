@@ -59,9 +59,9 @@ int chrono_and_print_test() {
 	  return 0;
 }
 
-</details>
-
 ```
+
+</details>
 
 This is how AngelScript scripts look like with *astd* library. User of *astd* library should not spot a difference of using std C++ library features inside scripts or in C++ code. 
 
