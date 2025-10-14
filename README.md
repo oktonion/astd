@@ -12,9 +12,16 @@ master   | [![C/C++ CI](https://github.com/oktonion/astd/actions/workflows/c-cpp
 
 ## Short summary
 
-Lets start with small piece of AngelScript code:
+Lets start with small piece of AngelScript code example with **astd** lib:
 
-__script.as__
+```cpp
+std::chrono::system_clock::now();
+```
+
+<details>
+<summary><b>or something more complex</b></summary>
+
+*script.as*
 ```cpp
 int chrono_and_print_test() {
       std::chrono::system_clock::time_point begin_sys = std::chrono::system_clock::now();
@@ -51,6 +58,9 @@ int chrono_and_print_test() {
       
 	  return 0;
 }
+
+</details>
+
 ```
 
 This is how AngelScript scripts look like with *astd* library. User of *astd* library should not spot a difference of using std C++ library features inside scripts or in C++ code. 
