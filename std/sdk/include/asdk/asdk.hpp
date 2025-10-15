@@ -162,9 +162,9 @@ namespace asdk {
 
         struct expose {
 
-            typedef enum asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
-            typedef enum asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
-            typedef enum asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef asdk::AngelScript::asEBehaviours::type asEBehaviours;
             typedef asdk::AngelScript::asSFuncPtr asSFuncPtr; 
             typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
             typedef asdk::AngelScript::asITypeInfo asITypeInfo;
@@ -257,9 +257,9 @@ namespace asdk {
 
         struct introduce {
 
-            typedef enum asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
-            typedef enum asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
-            typedef enum asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef asdk::AngelScript::asEBehaviours::type asEBehaviours;
             typedef asdk::AngelScript::asSFuncPtr asSFuncPtr;
             typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
             typedef asdk::AngelScript::asITypeInfo asITypeInfo;
@@ -780,7 +780,7 @@ namespace asdk {
         struct reflect
         {
             typedef AngelScript::asITypeInfo asITypeInfo;
-            typedef enum AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef AngelScript::asECallConvTypes::type asECallConvTypes;
             enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
 
             reflect(const std::string& name, AngelScript::asIScriptEngine &asIScriptEngine) : asIScriptEngine(&asIScriptEngine), name(name) {
@@ -790,7 +790,7 @@ namespace asdk {
                 init();
             }
             
-            typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(T()) == sizeof(T)>::type
+            typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(static_cast<T>(T())) == sizeof(T)>::type
             constructor() {
                 struct lambdas_tmpl {
                     static void ctor(T& that, asITypeInfo& ti) // objfirst
