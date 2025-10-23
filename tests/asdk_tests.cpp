@@ -322,9 +322,13 @@ TEST_CASE("asdk: exposing and reflection")
         );
         CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 2);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(my_value_class::dtor), asCALL_CDECL_OBJLAST)
+            asdk::expose(asIScriptEngine, my_value_class_cstr, "void ctor(int&in, float)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_float), asCALL_CDECL_OBJFIRST)
         );
         CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 3);
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_cstr, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(my_value_class::dtor), asCALL_CDECL_OBJLAST)
+        );
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 4);
         REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_cstr, "int get_val() const", asMETHOD(my_value_class, get_val), asCALL_THISCALL)
         );
