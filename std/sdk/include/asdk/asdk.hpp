@@ -359,9 +359,9 @@ namespace asdk {
 #           undef ASDK_ARG_LAST_IMPL
 #           endif
 
-            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2>
-            struct function_traits_storage_add
-            { };
+            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2
+            , class FunctionTraitsStorage3 = void>
+            struct function_traits_storage_add;
 #           ifndef ASDK_FUNCTION_TRAITS_STORAGE_ADD
 
 #           define ASDK_FunctionTraitsStorage2_CB(N) typename FunctionTraitsStorage2::arg##N##_type
@@ -372,7 +372,7 @@ namespace asdk {
             >                                                                        \
             struct function_traits_storage_add <                                     \
                 function_traits_storage<ASDK_FUNCTION_ARGS_LIST(LhsN)>,              \
-                FunctionTraitsStorage2                                               \
+                FunctionTraitsStorage2, void                                         \
             >                                                                        \
             {                                                                        \
                 typedef function_traits_storage<                                     \
@@ -387,6 +387,14 @@ namespace asdk {
 
 #           undef ASDK_FunctionTraitsStorage2_CB
 #           undef ASDK_FUNCTION_TRAITS_STORAGE_ADD
+
+            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2
+                , class FunctionTraitsStorage3>
+            struct function_traits_storage_add
+            { 
+                typedef typename function_traits_storage_add<FunctionTraitsStorage1, FunctionTraitsStorage2>::type add12;
+                typedef typename function_traits_storage_add<add12, FunctionTraitsStorage3>::type type;
+            };
 
 #           endif // ASDK_FUNCTION_TRAITS_STORAGE_ADD
 
@@ -544,57 +552,35 @@ namespace asdk {
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
-                struct cdecl_or_thiscall {
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT&>,
-                        decl_traits_storage
-                    >::type storage1;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT*>,
-                        decl_traits_storage
-                    >::type storage2;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT&>,
-                        decl_traits_storage
-                    >::type storage3;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT*>,
-                        decl_traits_storage
-                    >::type storage4;
-
-                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
-                    typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
-                    typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
-                    typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
-                    typedef typename conditional<
-                        true_type, false_type,
-                           is_compatible_with1::value == bool(true)
-                        || is_compatible_with2::value == bool(true)
-                        || is_compatible_with3::value == bool(true)
-                        || is_compatible_with4::value == bool(true)
-                    >::type is_compatible_with;
-                };
-                typedef typename cdecl_or_thiscall::is_compatible_with is_compatible_with_cdecl_or_thiscall;
-
-                typedef arg_type_ph CallingClassT;
-
+                typedef function_traits_storage<void, void, asITypeInfo&> ti_reference_storage;
+                typedef function_traits_storage<void, void, asITypeInfo*>   ti_pointer_storage;
+                typedef function_traits_storage<void, void, ClassT&>   class_reference_storage;
+                typedef function_traits_storage<void, void, ClassT*>     class_pointer_storage;
+                typedef typename function_traits_storage_add<
+                    ti_reference_storage,
+                    decl_traits_storage
+                >::type ti_decl_reference_storage;
+                typedef typename function_traits_storage_add<
+                    ti_pointer_storage,
+                    decl_traits_storage
+                >::type ti_decl_pointer_storage;
 
                 struct cdecl_objlast {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, CallingClassT, ClassT&>,
-                        decl_traits_storage
+                        ti_decl_reference_storage,
+                        class_reference_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, CallingClassT, ClassT*>,
-                        decl_traits_storage
+                        ti_decl_reference_storage,
+                        class_pointer_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, CallingClassT, ClassT&>,
-                        decl_traits_storage
+                        ti_decl_pointer_storage,
+                        class_reference_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, CallingClassT, ClassT*>,
-                        decl_traits_storage
+                        ti_decl_pointer_storage,
+                        class_pointer_storage
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
@@ -613,20 +599,21 @@ namespace asdk {
 
                 struct cdecl_objfirst {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, ClassT&, asITypeInfo&, CallingClassT>,
-                        decl_traits_storage
+                        class_reference_storage,
+                        ti_decl_reference_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, ClassT*, asITypeInfo&, CallingClassT>,
+                        class_reference_storage,
+                        ti_decl_pointer_storage,
                         decl_traits_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, ClassT&, asITypeInfo*, CallingClassT>,
-                        decl_traits_storage
+                        class_pointer_storage,
+                        ti_decl_reference_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, ClassT*, asITypeInfo*, CallingClassT>,
-                        decl_traits_storage
+                        class_pointer_storage,
+                        ti_decl_pointer_storage
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
@@ -646,7 +633,6 @@ namespace asdk {
                 typedef 
                 typename
                 conditional<ReflectionT, arg_type_ph,
-                    is_compatible_with_cdecl_or_thiscall::value == bool(true) ||
                     is_compatible_with_cdecl_objlast::value == bool(true) ||
                     is_compatible_with_cdecl_objfirst::value == bool(true)
                 >::type type;
@@ -656,24 +642,6 @@ namespace asdk {
                 typedef typename func_traits_type::arg1_type arg1_type;
                 typedef typename arg_last<func_traits_type>::type argN_type;
 
-                typedef 
-                typename
-                conditional<is_same<class_type, void>, false_type,
-                    is_compatible_with_cdecl_or_thiscall::value == bool(true)
-                >::type is_compatible_with_thiscall;
-
-                typedef 
-                typename
-                conditional<arg1_type, argN_type,
-                    is_compatible_with_cdecl_objfirst::value == bool(true) &&
-                    is_compatible_with_cdecl_or_thiscall::value == bool(false)
-                >::type thiscall_obj_type;
-
-                typedef 
-                typename
-                conditional<class_type, thiscall_obj_type,
-                    is_compatible_with_thiscall::value == bool(true)
-                >::type obj_type;
             };
         }
 
@@ -811,7 +779,6 @@ namespace asdk {
                 const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect> ctor_traits;
-                typedef typename ctor_traits::obj_type obj_type;
                 typedef typename ctor_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -845,10 +812,23 @@ namespace asdk {
             }
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
-            constructor(const std::string& arg1_str, FuncT func) { return *this; }
-            template<class Arg1T, class FuncT>
-            typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
-            constructor(const std::string& arg1_str, FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::obj_type obj = 0) { return *this; }
+            constructor(const std::string& arg1_str, FuncT func) {
+                const std::string ctor_str = (isTemplate != 0 ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
+
+                typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
+                typedef typename ctor_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    type_traits::is_same< class_type, void>::value ? (
+                        ctor_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        ctor_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                return *this;
+            }
 
             template<class FuncT>
             typename type_traits::function<ObjType, T, FuncT, reflect>::type
