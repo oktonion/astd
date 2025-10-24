@@ -547,13 +547,28 @@ namespace asdk {
 
         // constructor
         namespace type_traits {
-            template<AngelScript::asEObjTypeFlags::type, class ClassT, class FuncT, class ReflectionT, class DeclT = void(*)()>
+            template<AngelScript::asEObjTypeFlags::type ObjType, class ClassT, class FuncT, class ReflectionT, class DeclT = void(*)()>
             struct constructor {
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
-                typedef function_traits_storage<void, void, asITypeInfo&> ti_reference_storage;
-                typedef function_traits_storage<void, void, asITypeInfo*>   ti_pointer_storage;
+
+                enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
+
+                typedef 
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, void, asITypeInfo&>,
+                    isTemplate == 0
+                >::type ti_reference_storage;
+                typedef 
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, void, asITypeInfo*>,
+                    isTemplate == 0
+                >::type ti_pointer_storage;
                 typedef function_traits_storage<void, void, ClassT&>   class_reference_storage;
                 typedef function_traits_storage<void, void, ClassT*>     class_pointer_storage;
                 typedef typename function_traits_storage_add<

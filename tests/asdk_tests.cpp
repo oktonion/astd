@@ -59,17 +59,30 @@ public:
         return true;
     }
 
-    static void ctor(my_value_class& that, asITypeInfo& ti) // objfirst
+    static void ctor(my_value_class& that) // objfirst
+    {
+        new (&that) my_value_class();
+    }    
+    
+    static void ctor_tmpl(my_value_class& that, asITypeInfo& ti) // objfirst
     {
         new (&that) my_value_class();
     }
 
-    static void ctor_int(asITypeInfo& ti, int val, my_value_class& that) // objlast
+    static void ctor_int_tmpl(asITypeInfo& ti, int val, my_value_class& that) // objlast
+    {
+        new (&that) my_value_class(val);
+    }
+    static void ctor_int(int val, my_value_class& that) // objlast
     {
         new (&that) my_value_class(val);
     }
 
-    static void ctor_float(my_value_class& that, asITypeInfo& ti, float val) // objfirst
+    static void ctor_float_tmpl(my_value_class& that, asITypeInfo& ti, float val) // objfirst
+    {
+        new (&that) my_value_class(int(val));
+    }
+    static void ctor_float(my_value_class& that, float val) // objfirst
     {
         new (&that) my_value_class(int(val));
     }
@@ -298,6 +311,7 @@ TEST_CASE("asdk: exposing and reflection")
 {
     using namespace testsuite::AngelScript; // for all types of AngelScript
     const std::string script_path = "./../service/resources/asdk_exposing_and_reflection_script.as";
+    const std::string script_tmpl_path = "./../service/resources/asdk_exposing_and_reflection_script_tmpl.as";
 
     SERVICE_INIT_ENGINE_RAII();
     SERVICE_REQUEST_CONTEXT_RAII(asIScriptContext & asIScriptContext);
@@ -305,53 +319,78 @@ TEST_CASE("asdk: exposing and reflection")
     asIScriptEngine &asIScriptEngine = *asIScriptContext.GetEngine();
     
 
-    const char my_value_class_cstr[] = { "my_value_class<T>" };
-    SUBCASE("exposing and import of function 'int asdk_exposing_and_reflection_test()'")
+    const char my_value_class_tmpl_cstr[] = { "my_value_class<T>" };
+    const char my_value_class_cstr[] = { "my_value_class" };
+    SUBCASE("template: exposing and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, sizeof(my_value_class), asOBJ_TEMPLATE)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, sizeof(my_value_class), asOBJ_TEMPLATE)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)); 
-        REQUIRE(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr));
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
+        REQUIRE(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void ctor(int&in)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor), asCALL_CDECL_OBJFIRST)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void ctor(int&in)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_tmpl), asCALL_CDECL_OBJFIRST)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 1);
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr)->GetBehaviourCount() == 1);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void ctor(int&in, int)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_int), asCALL_CDECL_OBJLAST)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void ctor(int&in, int)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_int_tmpl), asCALL_CDECL_OBJLAST)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 2);
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr)->GetBehaviourCount() == 2);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void ctor(int&in, float)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_float), asCALL_CDECL_OBJFIRST)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void ctor(int&in, float)", asBEHAVE_CONSTRUCT, asFUNCTION(my_value_class::ctor_float_tmpl), asCALL_CDECL_OBJFIRST)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 3);
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr)->GetBehaviourCount() == 3);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(my_value_class::dtor), asCALL_CDECL_OBJLAST)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(my_value_class::dtor), asCALL_CDECL_OBJLAST)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 4);
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr)->GetBehaviourCount() == 4);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "bool template_callback(int&in, bool&out)", asBEHAVE_TEMPLATE_CALLBACK, asFUNCTION(my_value_class::template_callback), asCALL_CDECL)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "bool template_callback(int&in, bool&out)", asBEHAVE_TEMPLATE_CALLBACK, asFUNCTION(my_value_class::template_callback), asCALL_CDECL)
         );
-        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 5);
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr)->GetBehaviourCount() == 5);
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "int get_val() const", asMETHOD(my_value_class, get_val), asCALL_THISCALL)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "int get_val() const", asMETHOD(my_value_class, get_val), asCALL_THISCALL)
         );
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_cstr, "void set_val(int)", asMETHOD(my_value_class, set_val), asCALL_THISCALL)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void set_val(int)", asMETHOD(my_value_class, set_val), asCALL_THISCALL)
         );
 
-        SERVICE_IMPORT_FUNCTION(reflection_test, script_path, "int asdk_exposing_and_reflection_test()");
+        SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
 
         CHECK(static_cast<int>(asSUCCESS) == asIScriptContext.Prepare(reflection_test));
         CHECK(static_cast<int>(asEXECUTION_FINISHED) == asIScriptContext.Execute());
         CHECK(*(asINT32*)(asIScriptContext.GetAddressOfReturnValue()) == 0);
     }
 
-    SUBCASE("reflection and import of function 'int asdk_exposing_and_reflection_test()'")
+    SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE> reflect;
-        reflect(my_value_class_cstr, asIScriptEngine)
+        reflect(my_value_class_tmpl_cstr, asIScriptEngine)
             .template_callback()
+            .constructor()
+            .constructor(&my_value_class::ctor_tmpl)
+            .constructor<int>("int val")
+            .constructor<float>("float val", &my_value_class::ctor_float_tmpl)
+            .destructor()
+            .function("int get_val() const", &my_value_class::get_val)
+            .function("void set_val(int)", &my_value_class::set_val)
+            .operator_equal()
+            //.operator<()(&my_value_class::operator<)
+            //.operator+<my_value_class, int>()
+            //.operator+<int, my_value_class>()
+            ;
+
+        SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
+
+        CHECK(static_cast<int>(asSUCCESS) == asIScriptContext.Prepare(reflection_test));
+        CHECK(static_cast<int>(asEXECUTION_FINISHED) == asIScriptContext.Execute());
+        CHECK(asIScriptContext.GetReturnDWord() == 0);
+    }
+
+    SUBCASE("reflection and import of function 'int asdk_exposing_and_reflection_test()'")
+    {
+        typedef asdk::reflect<my_value_class, asOBJ_APP_CLASS> reflect;
+        reflect(my_value_class_cstr, asIScriptEngine)
             .constructor()
             .constructor(&my_value_class::ctor)
             .constructor<int>("int val")
