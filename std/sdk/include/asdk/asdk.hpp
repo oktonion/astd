@@ -104,39 +104,172 @@ namespace asdk {
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asOBJ_IMPLICIT_HANDLE;
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asOBJ_APP_CLASS_UNION;
         } using namespace asEObjTypeFlags;
+
+        // Behaviours
+        namespace asEBehaviours
+        {
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asEBehaviours;
+            typedef asEBehaviours type;
+            // Value object memory management
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_CONSTRUCT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_CONSTRUCT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_DESTRUCT;
+            // Reference object memory management
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FACTORY;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_FACTORY;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ADDREF;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASE;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG;
+            // Object operators
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK;
+            // Garbage collection behaviours
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FIRST_GC;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETREFCOUNT;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_SETGCFLAG;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETGCFLAG;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ENUMREFS;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASEREFS;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LAST_GC;
+
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_MAX;
+        } using namespace asEBehaviours;
+
+        // Calling conventions
+        namespace asECallConvTypes
+        {
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asECallConvTypes;
+            typedef asECallConvTypes type;
+
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_STDCALL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_ASGLOBAL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL_OBJLAST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_CDECL_OBJFIRST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_GENERIC;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJLAST;
+            using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJFIRST;
+        } using namespace asECallConvTypes;
     }
-
-    // Behaviours
-    namespace asEBehaviours
-    {
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asEBehaviours;
-        typedef asEBehaviours type;
-        // Value object memory management
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_CONSTRUCT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_CONSTRUCT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_DESTRUCT;
-        // Reference object memory management
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FACTORY;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LIST_FACTORY;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ADDREF;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASE;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GET_WEAKREF_FLAG;
-        // Object operators
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_TEMPLATE_CALLBACK;
-        // Garbage collection behaviours
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_FIRST_GC;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETREFCOUNT;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_SETGCFLAG;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_GETGCFLAG;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_ENUMREFS;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_RELEASEREFS;
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_LAST_GC;
-
-        using ASDK_ANGELSCRIPT_NS_QUALIFIER asBEHAVE_MAX;
-    } using namespace asEBehaviours;
 }
 
 #include <string>
+#include <stdexcept>
+
+// AngelScript SDK Exposing aka exporting C++ interface to script 
+namespace asdk {
+    namespace exposing {
+
+        struct expose {
+
+            typedef asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asSFuncPtr asSFuncPtr; 
+            typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
+            typedef asdk::AngelScript::asITypeInfo asITypeInfo;
+            
+            expose(asIScriptEngine& engine, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj()   , objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flags)
+                : engine(&engine), obj(obj), objSize(objSize), decl()    , func(func), callConv()        , flags(flags) {
+                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
+                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+            }
+            expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asEBehaviours beh, asSFuncPtr func, asECallConvTypes callConv)
+                : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(beh) {}
+
+            expose(const expose& other)
+                : engine(other.engine), obj(other.obj), objSize(other.objSize), decl(other.decl), func(other.func), callConv(other.callConv), flags(other.flags)
+            {
+                other.engine = 0;
+            }
+
+            ~expose() {
+                if (!engine) return;
+
+                struct lambdas {
+                    static void throw_an_error(const std::string& message) {
+                        throw(std::logic_error(message.c_str()));
+                    }
+                    
+                };
+
+                if (obj.empty())
+                {
+                    if (0 > engine->RegisterGlobalFunction(decl.c_str(), func, callConv))
+                        lambdas::throw_an_error("RegisterGlobalFunction");
+                }
+                else
+                {
+                    if (decl.empty())
+                    {
+                        if (asQWORD(-1) == flags) flags = 0;
+
+                        if (0 != (flags & asOBJ_APP_CLASS))
+                        {
+                            if (0 > engine->RegisterObjectType(obj.c_str(), objSize, flags))
+                                lambdas::throw_an_error("RegisterObjectType");
+                        }
+                        else
+                            lambdas::throw_an_error("Not Implemented");
+                    }
+                    else
+                    {
+                        if (asQWORD(-1) == flags)
+                        {
+                            if (0 > engine->RegisterObjectMethod(obj.c_str(), decl.c_str(), func, callConv))
+                                lambdas::throw_an_error("RegisterObjectMethod");
+                        }
+                        else
+                        {
+                            const asEBehaviours beh = static_cast<asEBehaviours>(flags);
+
+                            if (0 > engine->RegisterObjectBehaviour(obj.c_str(), beh, decl.c_str(), func, callConv))
+                                lambdas::throw_an_error("RegisterObjectBehaviour");
+                        }
+                    }
+                }
+            }
+
+        private:
+            mutable asIScriptEngine* engine;
+            std::string obj;
+            int objSize;
+            std::string decl;
+            asSFuncPtr func;
+            asECallConvTypes callConv;
+            asQWORD flags;
+        };
+        
+    }
+    using namespace exposing;
+}
+
+#include <string>
+#include <stdexcept>
+
+// AngelScript SDK Introducing aka importing script interface to C++
+namespace asdk {
+    namespace introducing {
+
+        struct introduce {
+
+            typedef asdk::AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef asdk::AngelScript::asEObjTypeFlags::type asEObjTypeFlags;
+            typedef asdk::AngelScript::asEBehaviours::type asEBehaviours;
+            typedef asdk::AngelScript::asSFuncPtr asSFuncPtr;
+            typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
+            typedef asdk::AngelScript::asITypeInfo asITypeInfo;
+        };
+
+    }
+}
+
+#include <string>
+#include <vector>
 
 // AngelScript SDK Reflection
 namespace asdk {
@@ -226,9 +359,9 @@ namespace asdk {
 #           undef ASDK_ARG_LAST_IMPL
 #           endif
 
-            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2>
-            struct function_traits_storage_add
-            { };
+            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2
+            , class FunctionTraitsStorage3 = void>
+            struct function_traits_storage_add;
 #           ifndef ASDK_FUNCTION_TRAITS_STORAGE_ADD
 
 #           define ASDK_FunctionTraitsStorage2_CB(N) typename FunctionTraitsStorage2::arg##N##_type
@@ -239,7 +372,7 @@ namespace asdk {
             >                                                                        \
             struct function_traits_storage_add <                                     \
                 function_traits_storage<ASDK_FUNCTION_ARGS_LIST(LhsN)>,              \
-                FunctionTraitsStorage2                                               \
+                FunctionTraitsStorage2, void                                         \
             >                                                                        \
             {                                                                        \
                 typedef function_traits_storage<                                     \
@@ -254,6 +387,14 @@ namespace asdk {
 
 #           undef ASDK_FunctionTraitsStorage2_CB
 #           undef ASDK_FUNCTION_TRAITS_STORAGE_ADD
+
+            template<class FunctionTraitsStorage1, class FunctionTraitsStorage2
+                , class FunctionTraitsStorage3>
+            struct function_traits_storage_add
+            { 
+                typedef typename function_traits_storage_add<FunctionTraitsStorage1, FunctionTraitsStorage2>::type add12;
+                typedef typename function_traits_storage_add<add12, FunctionTraitsStorage3>::type type;
+            };
 
 #           endif // ASDK_FUNCTION_TRAITS_STORAGE_ADD
 
@@ -365,7 +506,9 @@ namespace asdk {
             struct is_compatible_function_args_impl<Func1T, Func2T, false> {
                 typedef function_traits<Func1T> func1_traits;
                 typedef function_traits<Func2T> func2_traits;
-                typedef is_all_same < is_same<typename func1_traits::return_type, typename func2_traits::return_type>::value == bool(true)
+                typedef is_all_same < 
+                    is_same<typename func1_traits::return_type, typename func2_traits::return_type>::value == bool(true) 
+                    || is_same<arg_type_ph, typename func2_traits::return_type>::value == bool(true)
 #                   define ASDK_IS(N)                                                                                        \
                     is_same<typename func1_traits::arg##N##_type, typename func2_traits::arg##N##_type>::value == bool(true) \
                     || is_same<arg_type_ph, typename func2_traits::arg##N##_type>::value == bool(true)
@@ -404,62 +547,55 @@ namespace asdk {
 
         // constructor
         namespace type_traits {
-            template<AngelScript::asEObjTypeFlags::type, class ClassT, class FuncT, class ReflectionT, class DeclT = void(*)()>
+            template<AngelScript::asEObjTypeFlags::type ObjType, class ClassT, class FuncT, class ReflectionT, class DeclT = void(*)()>
             struct constructor {
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
-                struct cdecl_or_thiscall {
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT&>,
-                        decl_traits_storage
-                    >::type storage1;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT*>,
-                        decl_traits_storage
-                    >::type storage2;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT&>,
-                        decl_traits_storage
-                    >::type storage3;
-                    typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT*>,
-                        decl_traits_storage
-                    >::type storage4;
 
-                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
-                    typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
-                    typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
-                    typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
-                    typedef typename conditional<
-                        true_type, false_type,
-                           is_compatible_with1::value == bool(true)
-                        || is_compatible_with2::value == bool(true)
-                        || is_compatible_with3::value == bool(true)
-                        || is_compatible_with4::value == bool(true)
-                    >::type is_compatible_with;
-                };
-                typedef typename cdecl_or_thiscall::is_compatible_with is_compatible_with_cdecl_or_thiscall;
+                enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
 
-                typedef arg_type_ph CallingClassT;
-
+                typedef 
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, void, asITypeInfo&>,
+                    isTemplate == 0
+                >::type ti_reference_storage;
+                typedef 
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, void, asITypeInfo*>,
+                    isTemplate == 0
+                >::type ti_pointer_storage;
+                typedef function_traits_storage<void, void, ClassT&>   class_reference_storage;
+                typedef function_traits_storage<void, void, ClassT*>     class_pointer_storage;
+                typedef typename function_traits_storage_add<
+                    ti_reference_storage,
+                    decl_traits_storage
+                >::type ti_decl_reference_storage;
+                typedef typename function_traits_storage_add<
+                    ti_pointer_storage,
+                    decl_traits_storage
+                >::type ti_decl_pointer_storage;
 
                 struct cdecl_objlast {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT&, CallingClassT>,
-                        decl_traits_storage
+                        ti_decl_reference_storage,
+                        class_reference_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo&, ClassT*, CallingClassT>,
-                        decl_traits_storage
+                        ti_decl_reference_storage,
+                        class_pointer_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT&, CallingClassT>,
-                        decl_traits_storage
+                        ti_decl_pointer_storage,
+                        class_reference_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, asITypeInfo*, ClassT*, CallingClassT>,
-                        decl_traits_storage
+                        ti_decl_pointer_storage,
+                        class_pointer_storage
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
@@ -478,20 +614,21 @@ namespace asdk {
 
                 struct cdecl_objfirst {
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo&, ClassT&>,
-                        decl_traits_storage
+                        class_reference_storage,
+                        ti_decl_reference_storage
                     >::type storage1;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo&, ClassT*>,
+                        class_reference_storage,
+                        ti_decl_pointer_storage,
                         decl_traits_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo*, ClassT&>,
-                        decl_traits_storage
+                        class_pointer_storage,
+                        ti_decl_reference_storage
                     >::type storage3;
                     typedef typename function_traits_storage_add<
-                        function_traits_storage<void, void, CallingClassT, asITypeInfo*, ClassT*>,
-                        decl_traits_storage
+                        class_pointer_storage,
+                        ti_decl_pointer_storage
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
@@ -504,6 +641,85 @@ namespace asdk {
                         || is_compatible_with2::value == bool(true)
                         || is_compatible_with3::value == bool(true)
                         || is_compatible_with4::value == bool(true)
+                    >::type is_compatible_with;
+                }; 
+                typedef typename cdecl_objfirst::is_compatible_with is_compatible_with_cdecl_objfirst;
+
+                typedef 
+                typename
+                conditional<ReflectionT, arg_type_ph,
+                    is_compatible_with_cdecl_objlast::value == bool(true) ||
+                    is_compatible_with_cdecl_objfirst::value == bool(true)
+                >::type type;
+
+                typedef function_traits<FuncT> func_traits_type;
+                typedef typename func_traits_type::class_type class_type;
+                typedef typename func_traits_type::arg1_type arg1_type;
+                typedef typename arg_last<func_traits_type>::type argN_type;
+
+            };
+        }
+
+        // function
+        namespace type_traits {
+
+            template<class FuncT, class ClassT>
+            struct func_ptr_converter {
+                static AngelScript::asSFuncPtr call(FuncT func) throw() {
+                    return asSMethodPtr<sizeof(void (ClassT::*)())>::Convert((void (ClassT::*)())(func));
+                }
+            };
+
+            template<class FuncT>
+            struct func_ptr_converter<FuncT, void> {
+                static AngelScript::asSFuncPtr call(FuncT func) throw() {
+                    return asFUNCTION(func);
+                }
+            };
+
+            template<AngelScript::asEObjTypeFlags::type, class ClassT, class FuncT, class ReflectionT, class DeclT = arg_type_ph(*)()>
+            struct function {
+                typedef function_traits<DeclT> decl_traits_type;
+                typedef typename decl_traits_type::storage decl_traits_storage;
+
+                struct cdecl_or_thiscall {
+                    typedef decl_traits_storage storage1;
+
+                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
+                    typedef typename conditional<
+                        true_type, false_type,
+                           is_compatible_with1::value == bool(true)
+                    >::type is_compatible_with;
+                };
+                typedef typename cdecl_or_thiscall::is_compatible_with is_compatible_with_cdecl_or_thiscall;
+
+                typedef arg_type_ph CallingClassT;
+
+
+                struct cdecl_objlast {
+                    typedef typename function_traits_storage_add<
+                        function_traits_storage<void, void, CallingClassT>,
+                        decl_traits_storage
+                    >::type storage1;
+
+                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
+                    typedef typename conditional<
+                        true_type, false_type,
+                           is_compatible_with1::value == bool(true)
+                    >::type is_compatible_with;
+                }; 
+                typedef typename cdecl_objlast::is_compatible_with is_compatible_with_cdecl_objlast;
+
+                struct cdecl_objfirst {
+                    typedef typename function_traits_storage_add<
+                        function_traits_storage<void, void, CallingClassT, ClassT&>,
+                        decl_traits_storage
+                    >::type storage1;
+
+                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
+                    typedef typename conditional<
+                        true_type, false_type,
+                           is_compatible_with1::value == bool(true)
                     >::type is_compatible_with;
                 }; 
                 typedef typename cdecl_objfirst::is_compatible_with is_compatible_with_cdecl_objfirst;
@@ -539,53 +755,220 @@ namespace asdk {
                 conditional<class_type, thiscall_obj_type,
                     is_compatible_with_thiscall::value == bool(true)
                 >::type obj_type;
+
             };
-        }        
+        }     
         
         template<class T, AngelScript::asEObjTypeFlags::type ObjType>
         struct reflect
         {
             typedef AngelScript::asITypeInfo asITypeInfo;
-            reflect(const std::string& name) {}
+            typedef AngelScript::asECallConvTypes::type asECallConvTypes;
+            enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
 
+            reflect(const std::string& name, AngelScript::asIScriptEngine &asIScriptEngine) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init();
+            }
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init();
+            }
+            
+            typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(static_cast<T>(T())) == sizeof(T)>::type
+            constructor() {
+                struct lambdas_tmpl {
+                    static void ctor(T& that, asITypeInfo& ti) // objfirst
+                    { new (&that) T(); }
+                };
+                struct lambdas {
+                    static void ctor(T& that) // objfirst
+                    { new (&that) T(); }
+                };
+                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+                const AngelScript::asSFuncPtr asFunc = isTemplate != 0 ? asFUNCTION(lambdas_tmpl::ctor) : asFUNCTION(lambdas::ctor);
+                asdk::expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL_CDECL_OBJFIRST);
+                return *this; 
+            }
             template<class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect>::type
-            constructor(FuncT func) {}
-            template<class FuncT>
-            typename type_traits::constructor<ObjType, T, FuncT, reflect>::type
-            constructor(FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect>::obj_type obj) {}
+            constructor(FuncT func) {
+                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+
+                typedef type_traits::constructor<ObjType, T, FuncT, reflect> ctor_traits;
+                typedef typename ctor_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    type_traits::is_same< class_type, void>::value ? (
+                        ctor_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        ctor_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                return *this;
+            }
 
             template<class Arg1T>
             typename type_traits::conditional<reflect, type_traits::arg_type_ph, sizeof(T(type_traits::declval<Arg1T>())) == sizeof(T)>::type
-            constructor(const std::string& arg1_str) { return constructor(arg1_str, type_traits::constructor<ObjType, T, void(*)(Arg1T), reflect, void(*)(Arg1T)>::ctor); }
+            constructor(const std::string& arg1_str) {
+                const std::string ctor_str = (isTemplate != 0 ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
+
+                struct lambdas_tmpl {
+                    static void ctor(T& that, asITypeInfo& ti, Arg1T arg1) // objfirst
+                    { new (&that) T(arg1); }
+                };
+                struct lambdas {
+                    static void ctor(T& that, Arg1T arg1) // objfirst
+                    { new (&that) T(arg1); }
+                };
+                const AngelScript::asSFuncPtr asFunc = isTemplate != 0 ? asFUNCTION(lambdas_tmpl::ctor) : asFUNCTION(lambdas::ctor);
+                asdk::expose expose(*asIScriptEngine, name, ctor_str, asBEHAVE_CONSTRUCT, asFunc, asCALL_CDECL_OBJFIRST);
+                return *this;
+            }
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
-            constructor(const std::string& arg1_str, FuncT func) {}
+            constructor(const std::string& arg1_str, FuncT func) {
+                const std::string ctor_str = (isTemplate != 0 ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
+
+                typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
+                typedef typename ctor_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    type_traits::is_same< class_type, void>::value ? (
+                        ctor_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        ctor_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                return *this;
+            }
+
+            template<class FuncT>
+            typename type_traits::function<ObjType, T, FuncT, reflect>::type
+            function(const std::string& func_str, FuncT func) {
+                typedef type_traits::function<ObjType, T, FuncT, reflect> func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef typename func_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL = 
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
+                return *this;
+            }
+
             template<class Arg1T, class FuncT>
-            typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
-            constructor(const std::string& arg1_str, FuncT func, typename type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::obj_type obj = 0) {}
+            typename type_traits::function<ObjType, T, FuncT, reflect, void(*)(Arg1T)>::type
+            function(const std::string& func_str, const std::string& arg1_str, FuncT func) {
+                typedef type_traits::function<ObjType, T, FuncT, reflect> func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef typename func_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL = 
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
+                return *this;
+            }
+
+            reflect destructor() {                
+                struct lambdas {
+                    static void dtor(T& that) // objfirst
+                    { that.~T(); }
+                };
+                asdk::expose(*asIScriptEngine, name, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(lambdas::dtor), asCALL_CDECL_OBJFIRST);
+                return *this; 
+            }
+
+
+            reflect operator_equal()
+            {
+                return *this;
+            }
+
+        protected:
+            AngelScript::asIScriptEngine* asIScriptEngine;
+            std::string name;
+            std::vector<asdk::expose> entities;
+            //void expose(const asdk::expose& entity) { entities.push_back(entity); }
+            void init()
+            {
+                asdk::expose(*asIScriptEngine, name, sizeof(T), ObjType);
+            }
         };
+
 
         template<class T>
         struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
-            : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS>
+            : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)>
         {
-            typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS> underlying_type;
+            typedef reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
             
-            reflect(const std::string& name): underlying_type(name) {}
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine) : underlying_type(name, asIScriptEngine) {}
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
             
             template<class FuncT> 
-            typename type_traits::template_callback<FuncT, reflect>::type
-            template_callback(FuncT func) {}
-            template<class FuncT> 
-            typename type_traits::template_callback<FuncT, reflect>::type
-            template_callback(FuncT func, typename type_traits::template_callback<FuncT, reflect>::obj_type obj) {}
+            typename type_traits::template_callback<FuncT, underlying_type&>::type
+            template_callback(FuncT func) {
+
+                const std::string tmpl_cb_str = "bool template_callback(int&in, bool&out)";
+
+                typedef type_traits::template_callback<FuncT, underlying_type&> tmpl_cb_traits;
+                typedef void class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    asCALL_CDECL;
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, tmpl_cb_str.c_str(), asBEHAVE_TEMPLATE_CALLBACK, asFunc, asCALL);
+                return *this; 
+            }
+
+        private:
+            using underlying_type::asIScriptEngine;
+            using underlying_type::name;
+            template<class FuncT>
+            static typename type_traits::template_callback<FuncT, underlying_type&>::type
+            template_callback_tester(FuncT func);
+            static char
+            template_callback_result_tester(const underlying_type&);
+            static int
+            template_callback_result_tester(const type_traits::arg_type_ph&);
+
+            typedef
+            typename type_traits::conditional<
+                underlying_type&, type_traits::arg_type_ph,
+                sizeof(
+                    template_callback_result_tester(
+                        template_callback_tester(T::template_callback)
+                    )
+                ) == sizeof(char)
+            >::type helper_type;
+
+        public:
+
+            helper_type
+            template_callback() { return template_callback(T::template_callback); }
+
+
         };
         template<class T> struct reflect_template 
             : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> 
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
-            reflect_template(const std::string& name): underlying_type(name) {}
+            reflect_template(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine): underlying_type(name, asIScriptEngine) {}
+            reflect_template(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
         };
 
     }
@@ -594,6 +977,7 @@ namespace asdk {
 namespace asdk {
 
     using namespace asdk::reflection;
+    using namespace asdk::exposing;
 }
 
 #undef ASDK_ARG
