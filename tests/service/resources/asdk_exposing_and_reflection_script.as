@@ -24,5 +24,26 @@ int asdk_exposing_and_reflection_test()
         if (ival != 5) return -3;
     }
     
+    {
+        my_value_class value1(5.3);
+        my_value_class value2(5.2);
+        
+        if (!(value1 == value2)) return -4;
+    }
+    
+    {
+        my_value_class value1(5.3);
+        my_value_class value2(4.2);
+        
+        if (value1 == value2) return -4;
+    }
+    
+    {
+        my_value_class value1(3.3);
+        my_value_class value2(33);
+        
+        if (value1 == value2) return -4;
+    }
+    
     return 0;
 }
