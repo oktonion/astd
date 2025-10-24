@@ -877,18 +877,23 @@ namespace asdk {
                 return *this; 
             }
 
-        private:
+
+            reflect operator_equal()
+            {
+                return *this;
+            }
+
+        protected:
             AngelScript::asIScriptEngine* asIScriptEngine;
             std::string name;
             std::vector<asdk::expose> entities;
-
-        protected:
             //void expose(const asdk::expose& entity) { entities.push_back(entity); }
             void init()
             {
                 asdk::expose expose(*asIScriptEngine, name, sizeof(T), ObjType);
             }
         };
+
 
         template<class T>
         struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
@@ -900,11 +905,44 @@ namespace asdk {
             reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
             
             template<class FuncT> 
-            typename type_traits::template_callback<FuncT, reflect>::type
-            template_callback(FuncT func) { return *this; }
-            template<class FuncT> 
-            typename type_traits::template_callback<FuncT, reflect>::type
-            template_callback(FuncT func, typename type_traits::template_callback<FuncT, reflect>::obj_type obj) { return *this; }
+            typename type_traits::template_callback<FuncT, underlying_type&>::type
+            template_callback(FuncT func) {
+                const std::string tmpl_cb_str = "bool template_callback(int&in, bool&out)";
+
+                typedef type_traits::template_callback<FuncT, underlying_type&> tmpl_cb_traits;
+                typedef void class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    asCALL_CDECL;
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose expose(*asIScriptEngine, name, tmpl_cb_str.c_str(), asBEHAVE_TEMPLATE_CALLBACK, asFunc, asCALL);
+                return *this; 
+            }
+
+        private:
+            template<class FuncT>
+            static typename type_traits::template_callback<FuncT, underlying_type&>::type
+            template_callback_tester(FuncT func);
+            static char
+            template_callback_result_tester(const underlying_type&);
+            static int
+            template_callback_result_tester(const type_traits::arg_type_ph&);
+
+            typedef
+            typename type_traits::conditional<
+                underlying_type&, type_traits::arg_type_ph,
+                sizeof(
+                    template_callback_result_tester(
+                        template_callback_tester(T::template_callback)
+                    )
+                ) == sizeof(char)
+            >::type helper_type;
+
+        public:
+
+            helper_type
+            template_callback() { return template_callback(T::template_callback); }
+
 
         };
         template<class T> struct reflect_template 

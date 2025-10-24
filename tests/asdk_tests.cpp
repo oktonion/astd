@@ -330,6 +330,10 @@ TEST_CASE("asdk: exposing and reflection")
         );
         CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 4);
         REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_cstr, "bool template_callback(int&in, bool&out)", asBEHAVE_TEMPLATE_CALLBACK, asFUNCTION(my_value_class::template_callback), asCALL_CDECL)
+        );
+        CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_cstr)->GetBehaviourCount() == 5);
+        REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_cstr, "int get_val() const", asMETHOD(my_value_class, get_val), asCALL_THISCALL)
         );
         REQUIRE_NOTHROW(
@@ -345,8 +349,9 @@ TEST_CASE("asdk: exposing and reflection")
 
     SUBCASE("reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
-        asdk::reflect<my_value_class, asOBJ_TEMPLATE>(my_value_class_cstr, asIScriptEngine)
-            .template_callback(&my_value_class::template_callback)
+        typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE> reflect;
+        reflect(my_value_class_cstr, asIScriptEngine)
+            .template_callback()
             .constructor()
             .constructor(&my_value_class::ctor)
             .constructor<int>("int val")
@@ -354,7 +359,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            //.operator==(0)
+            .operator_equal()
             //.operator<()(&my_value_class::operator<)
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
