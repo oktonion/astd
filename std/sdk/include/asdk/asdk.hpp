@@ -785,7 +785,7 @@ namespace asdk {
                 };
                 const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
                 const AngelScript::asSFuncPtr asFunc = isTemplate != 0 ? asFUNCTION(lambdas_tmpl::ctor) : asFUNCTION(lambdas::ctor);
-                asdk::expose expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL_CDECL_OBJFIRST);
+                asdk::expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL_CDECL_OBJFIRST);
                 return *this; 
             }
             template<class FuncT>
@@ -804,7 +804,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL);
                 return *this;
             }
 
@@ -841,7 +841,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
                 return *this;
             }
 
@@ -860,7 +860,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
                 return *this;
             }
 
@@ -879,7 +879,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
                 return *this;
             }
 
@@ -888,7 +888,7 @@ namespace asdk {
                     static void dtor(T& that) // objfirst
                     { that.~T(); }
                 };
-                asdk::expose expose(*asIScriptEngine, name, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(lambdas::dtor), asCALL_CDECL_OBJFIRST);
+                asdk::expose(*asIScriptEngine, name, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(lambdas::dtor), asCALL_CDECL_OBJFIRST);
                 return *this; 
             }
 
@@ -905,7 +905,7 @@ namespace asdk {
             //void expose(const asdk::expose& entity) { entities.push_back(entity); }
             void init()
             {
-                asdk::expose expose(*asIScriptEngine, name, sizeof(T), ObjType);
+                asdk::expose(*asIScriptEngine, name, sizeof(T), ObjType);
             }
         };
 
@@ -914,7 +914,7 @@ namespace asdk {
         struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
             : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)>
         {
-            typedef reflect<T, AngelScript::asEObjTypeFlags::type(asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
+            typedef reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
             
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine) : underlying_type(name, asIScriptEngine) {}
             reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
@@ -922,6 +922,7 @@ namespace asdk {
             template<class FuncT> 
             typename type_traits::template_callback<FuncT, underlying_type&>::type
             template_callback(FuncT func) {
+
                 const std::string tmpl_cb_str = "bool template_callback(int&in, bool&out)";
 
                 typedef type_traits::template_callback<FuncT, underlying_type&> tmpl_cb_traits;
@@ -930,11 +931,13 @@ namespace asdk {
                 const asECallConvTypes asCALL =
                     asCALL_CDECL;
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose expose(*asIScriptEngine, name, tmpl_cb_str.c_str(), asBEHAVE_TEMPLATE_CALLBACK, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, tmpl_cb_str.c_str(), asBEHAVE_TEMPLATE_CALLBACK, asFunc, asCALL);
                 return *this; 
             }
 
         private:
+            using underlying_type::asIScriptEngine;
+            using underlying_type::name;
             template<class FuncT>
             static typename type_traits::template_callback<FuncT, underlying_type&>::type
             template_callback_tester(FuncT func);
