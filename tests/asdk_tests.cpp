@@ -354,6 +354,10 @@ TEST_CASE("asdk: exposing and reflection")
         REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void set_val(int)", asMETHOD(my_value_class, set_val), asCALL_THISCALL)
         );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("bool opEquals(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator==, (const my_value_class&, const my_value_class&), bool), asCALL_CDECL_OBJFIRST)
+        );
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
 
@@ -374,7 +378,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal()
+            .operator_equal_to()
             //.operator<()(&my_value_class::operator<)
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
@@ -398,7 +402,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal()
+            .operator_equal_to()
             //.operator<()(&my_value_class::operator<)
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
