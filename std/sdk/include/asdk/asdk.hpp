@@ -980,7 +980,7 @@ namespace asdk {
 
             reflect& operator_equal_to()
             {
-                return operator_equal_to(static_cast<bool(*)(const T&, const T&)>(opEquals), name);
+                return operator_equal_to(static_cast<bool(*)(const T&, const T&)>(opEquals), "const " + name + "&in");
             }
 
             template<class OtherT>
