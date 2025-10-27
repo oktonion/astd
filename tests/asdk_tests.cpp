@@ -23,10 +23,7 @@ public:
 
     friend bool operator==(
         const my_value_class& lhs, const my_value_class& rhs
-        )
-    {
-        return lhs.value == rhs.value;
-    }
+        );
 
     bool operator<(
         const my_value_class& other
@@ -92,6 +89,12 @@ public:
     }
 };
 
+bool operator==(
+    const my_value_class& lhs, const my_value_class& rhs
+    )
+{
+    return lhs.value == rhs.value;
+}
 
 TEST_CASE("asdk: reflection type traits")
 {
@@ -419,9 +422,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal_to<const my_value_class&>(
-                "const my_value_class<T> & in"
-            )
+            .operator_equal_to<const my_value_class&>("const my_value_class<T> & in")
             //.operator<()(&my_value_class::operator<)
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
