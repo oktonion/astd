@@ -98,9 +98,18 @@ public:
 
 bool operator==(
     const my_value_class& lhs, const my_value_class& rhs
-    )
+)
 {
     return lhs.value == rhs.value;
+}
+
+int operator_compare(
+    const my_value_class& lhs, const my_value_class& rhs
+)
+{
+    if (lhs < rhs) return -1;
+    if (lhs > rhs) return 1;
+    return 0;
 }
 
 TEST_CASE("asdk: reflection type traits")
@@ -408,6 +417,10 @@ TEST_CASE("asdk: exposing and reflection")
         REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("bool opEquals(const ") + my_value_class_tmpl_cstr + " & in) const"
                 , asFUNCTIONPR(operator==, (const my_value_class&, const my_value_class&), bool), asCALL_CDECL_OBJFIRST)
+        );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("int opCmp(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator_compare, (const my_value_class&, const my_value_class&), int), asCALL_CDECL_OBJFIRST)
         );
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
