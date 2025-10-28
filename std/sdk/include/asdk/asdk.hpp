@@ -295,6 +295,8 @@ namespace asdk {
             template<class T>
             T declval();
 
+            template<int> struct sfinae_size_check {};
+
 
 #           ifndef ASDK_FUNCTION_ARGS_TYPES
 #           define   ASDK_FUNCTION_ARGS_TYPES_1(param_cb) class param_cb(1) ASDK_PARAM 
@@ -815,7 +817,8 @@ namespace asdk {
                 >::type obj_type;
 
             };
-        }
+        } // namespace type_traits
+
         
         template<class T, AngelScript::asEObjTypeFlags::type ObjType>
         struct reflect
@@ -939,22 +942,36 @@ namespace asdk {
                 return *this;
             }
 
-            reflect destructor() {                
-                struct lambdas {
-                    static void dtor(T& that) // objfirst
-                    { that.~T(); }
-                };
-                asdk::expose(*asIScriptEngine, name, "void dtor()", asBEHAVE_DESTRUCT, asFUNCTION(lambdas::dtor), asCALL_CDECL_OBJFIRST);
-                return *this; 
+            template<class FuncT>
+            typename type_traits::function<ObjType, T, FuncT, reflect&, void(*)()>::type
+            destructor(FuncT func) {
+                typedef type_traits::function<ObjType, T, FuncT, reflect&, void(*)()> func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef typename func_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL = 
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, "void dtor()", asBEHAVE_DESTRUCT, asFunc, asCALL);
+                return *this;
             }
 
+            reflect& destructor() {
+                return destructor(dtor);
+            }
+            
             template<class OtherT, class FuncT>
             typename type_traits::function<ObjType, T, FuncT, reflect&, bool(*)(OtherT)>::type
             operator_equal_to(FuncT func
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, bool(*)(OtherT)>::type other_str)
             {
                 const std::string op_str = "bool opEquals(" + other_str + ") const";
-
+            
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, bool(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
@@ -969,7 +986,7 @@ namespace asdk {
                 asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
                 return *this;
             }
-
+            
             template<class FuncT>
             typename type_traits::function<ObjType, T, FuncT, reflect&, bool(*)(type_traits::arg_type_ph)>::type
             operator_equal_to(FuncT func
@@ -977,16 +994,19 @@ namespace asdk {
             {
                 return operator_equal_to<type_traits::arg_type_ph, FuncT>(func, other_str);
             }
-
-            typename type_traits::conditional<reflect&, type_traits::arg_type_ph, sizeof(type_traits::declval<T>() == type_traits::declval<T>()) == sizeof(bool)>::type
-            operator_equal_to()
+            
+            typename type_traits::conditional<reflect&, type_traits::arg_type_ph
+                , sizeof(*(const T*)(0) == *(const T*)(0)) == sizeof(bool)>::type
+            operator_equal_to(int(*)[sizeof((*(const T*)(0)) == (*(const T*)(0)))] = 0)
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const T&)>(opEquals), "const " + name + "&in");
             }
 
+            
             template<class OtherT>
-            typename type_traits::conditional<reflect&, type_traits::arg_type_ph, sizeof(type_traits::declval<T>() == type_traits::declval<OtherT>()) == sizeof(bool)>::type
-            operator_equal_to(const std::string& other_str)
+            reflect&
+            operator_equal_to(const std::string& other_str
+                , int(*)[sizeof((*(const T*)(0)) == (*(const OtherT*)(0)))] = 0)
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
             }
@@ -997,7 +1017,7 @@ namespace asdk {
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, int(*)(OtherT)>::type other_str)
             {
                 const std::string op_str = "int opCmp(" + other_str + ") const";
-
+            
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, int(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
@@ -1011,8 +1031,8 @@ namespace asdk {
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
                 asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
                 return *this;
-            }           
-
+            }
+            
             template<class FuncT>
             typename type_traits::function<ObjType, T, FuncT, reflect&, int(*)(type_traits::arg_type_ph)>::type
             operator_compare(FuncT func
@@ -1020,18 +1040,29 @@ namespace asdk {
             {
                 return operator_compare<type_traits::arg_type_ph, FuncT>(func, other_str);
             }
-
-            typename type_traits::conditional<reflect&, type_traits::arg_type_ph, 
-                sizeof(type_traits::declval<T>() < type_traits::declval<T>()) == sizeof(type_traits::declval<T>() > type_traits::declval<T>())>::type
-            operator_compare()
+            
+            typename type_traits::conditional<reflect&, type_traits::arg_type_ph 
+                , sizeof((*(const T*)(0)) < (*(const T*)(0))) == sizeof((*(const T*)(0)) > (*(const T*)(0)))>::type
+            operator_compare(
+                int(*)
+                [
+                    sizeof((*(const T*)(0)) < (*(const T*)(0)))
+                    +
+                    sizeof((*(const T*)(0)) > (*(const T*)(0)))
+                ] = 0)
             {
                 return operator_compare(static_cast<int(*)(const T&, const T&)>(opCmp), "const " + name + "&in");
             }
 
             template<class OtherT>
-            typename type_traits::conditional<reflect&, type_traits::arg_type_ph,
-                sizeof(type_traits::declval<T>() < type_traits::declval<OtherT>()) == sizeof(type_traits::declval<T>() > type_traits::declval<OtherT>())>::type
-            operator_compare(const std::string& other_str)
+            reflect&
+            operator_compare(const std::string &other_str
+                , int(*)
+                [
+                    sizeof((*(const T*)(0)) < (*(const OtherT*)(0)))
+                    +
+                    sizeof((*(const T*)(0)) > (*(const OtherT*)(0)))
+                ] = 0)
             {
                 return operator_compare(static_cast<int(*)(const T&, const OtherT&)>(opCmp), other_str);
             }
@@ -1074,6 +1105,11 @@ namespace asdk {
             inline static bool opEquals(const T& lhs, const T& rhs) // objfirst
             {
                 return std::equal_to<T>()(lhs, rhs);
+            }
+
+            inline static void dtor(T& that) // objfirst
+            {
+                that.~T();
             }
 
             inline static void ctor(T& that, asITypeInfo& ti) // objfirst
