@@ -32,6 +32,13 @@ public:
         return value < other.value;;
     }
 
+    bool operator>(
+        const my_value_class& other
+        ) const
+    {
+        return value > other.value;;
+    }
+
     int get_val() const { return value; }
     void set_val(int new_val) { value = new_val; }
 
@@ -419,11 +426,11 @@ TEST_CASE("asdk: exposing and reflection")
             .constructor(&my_value_class::ctor_tmpl)
             .constructor<int>("int val")
             .constructor<float>("float val", &my_value_class::ctor_float_tmpl)
-            .destructor()
+            //.destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal_to<const my_value_class&>("const my_value_class<T> & in")
-            //.operator<()(&my_value_class::operator<)
+            .operator_equal_to<my_value_class>("const my_value_class<T> & in")
+            .operator_compare()
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
             ;
@@ -443,11 +450,11 @@ TEST_CASE("asdk: exposing and reflection")
             .constructor(&my_value_class::ctor)
             .constructor<int>("int val")
             .constructor<float>("float val", &my_value_class::ctor_float)
-            .destructor()
+            //.destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
             .operator_equal_to()
-            //.operator<()(&my_value_class::operator<)
+            .operator_compare<my_value_class>("const my_value_class<T> & in")
             //.operator+<my_value_class, int>()
             //.operator+<int, my_value_class>()
             ;
