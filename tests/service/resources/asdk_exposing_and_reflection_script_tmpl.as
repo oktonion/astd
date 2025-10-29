@@ -54,5 +54,13 @@ int asdk_exposing_and_reflection_test()
         if (value2 < value1) return -9;
     }
     
+    {
+        my_value_class<int> value1(2);
+        my_value_class<int> value2(3);
+        
+        auto result = value1 + value2;
+        if (result != 5) return -10;
+    }
+    
     return 0;
 }
