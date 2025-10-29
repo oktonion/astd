@@ -422,6 +422,10 @@ TEST_CASE("asdk: exposing and reflection")
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("int opCmp(const ") + my_value_class_tmpl_cstr + " & in) const"
                 , asFUNCTIONPR(operator_compare, (const my_value_class&, const my_value_class&), int), asCALL_CDECL_OBJFIRST)
         );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opAdd(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator+, (const my_value_class&, int), my_value_class), asCALL_CDECL_OBJFIRST)
+        );
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
 
@@ -442,9 +446,10 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
+            //.operator_assign()
             .operator_equal_to<my_value_class>("const my_value_class<T> & in")
             .operator_compare()
-            //.operator+<my_value_class, int>()
+            .operator+<int>("int")
             //.operator+<int, my_value_class>()
             ;
 
@@ -468,7 +473,7 @@ TEST_CASE("asdk: exposing and reflection")
             .function("void set_val(int)", &my_value_class::set_val)
             .operator_equal_to()
             .operator_compare<my_value_class>("const my_value_class & in")
-            //.operator+<my_value_class, int>()
+            .operator_add<int, my_value_class>("int")
             //.operator+<int, my_value_class>()
             ;
 
