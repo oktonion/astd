@@ -198,9 +198,9 @@ namespace testsuite {
 
     struct asCScriptEngineHack : asCScriptEngine 
     {
-        static int GetMessageCallback(asIScriptEngine& asIScriptEngine, asSFuncPtr* callback, void** obj, asDWORD* callConv)
+        static int GetMessageCallback(ANGELSCRIPT_NS_QUALIFIER asIScriptEngine& asIScriptEngine, ANGELSCRIPT_NS_QUALIFIER asSFuncPtr* callback, void** obj, ANGELSCRIPT_NS_QUALIFIER asDWORD* callConv)
         {
-            asCScriptEngine& engine = dynamic_cast<asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
+            ANGELSCRIPT_NS_QUALIFIER asCScriptEngine& engine = dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
             bool& msgCallback = engine.msgCallback;
 
             if (!msgCallback)
@@ -233,12 +233,12 @@ namespace testsuite {
                 }
             };
 
-            asSSystemFunctionInterface& msgCallbackFunc = engine.msgCallbackFunc;
+            ANGELSCRIPT_NS_QUALIFIER asSSystemFunctionInterface& msgCallbackFunc = engine.msgCallbackFunc;
             void*& msgCallbackObj = engine.msgCallbackObj;
 
-            asSFuncPtr msgCallbackOriginalFuncPtr = 0;
+            ANGELSCRIPT_NS_QUALIFIER asSFuncPtr msgCallbackOriginalFuncPtr = 0;
             msgCallbackOriginalFuncPtr.ptr.f.func = msgCallbackFunc.func;
-            enum asECallConvTypes msgCallbackOriginalCallConv = lambdas::convert_call_conv(msgCallbackFunc.callConv);
+            ANGELSCRIPT_NS_QUALIFIER asECallConvTypes msgCallbackOriginalCallConv = lambdas::convert_call_conv(msgCallbackFunc.callConv);
 
             if (callback)
                 *callback = msgCallbackOriginalFuncPtr;
@@ -249,15 +249,15 @@ namespace testsuite {
 
             return asSUCCESS;
         }
-        static void UnregisterGlobalFunction(asIScriptEngine& asIScriptEngine, asIScriptFunction* asIScriptFunction)
+        static void UnregisterGlobalFunction(ANGELSCRIPT_NS_QUALIFIER asIScriptEngine& asIScriptEngine, ANGELSCRIPT_NS_QUALIFIER asIScriptFunction* asIScriptFunction)
         {
-            asCScriptFunction* func = &dynamic_cast<asCScriptFunction&>(*asIScriptFunction); // will generate exception with some user provided function class and that's allright
-            asCScriptEngine& engine = dynamic_cast<asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
+            ANGELSCRIPT_NS_QUALIFIER asCScriptFunction* func = &dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptFunction&>(*asIScriptFunction); // will generate exception with some user provided function class and that's allright
+            ANGELSCRIPT_NS_QUALIFIER asCScriptEngine& engine = dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
 
-            const asCArray<unsigned int>& idxs = engine.registeredGlobalFuncs.GetIndexes(func->nameSpace, func->name);
-            for (asUINT n = 0; n < idxs.GetLength(); n++)
+            const ANGELSCRIPT_NS_QUALIFIER asCArray<unsigned int>& idxs = engine.registeredGlobalFuncs.GetIndexes(func->nameSpace, func->name);
+            for (ANGELSCRIPT_NS_QUALIFIER asUINT n = 0; n < idxs.GetLength(); n++)
             {
-                asCScriptFunction* f = engine.registeredGlobalFuncs.Get(idxs[n]);
+                ANGELSCRIPT_NS_QUALIFIER asCScriptFunction* f = engine.registeredGlobalFuncs.Get(idxs[n]);
                 if (f->IsSignatureExceptNameAndReturnTypeEqual(func))
                 {
                     engine.registeredGlobalFuncs.Erase(idxs[n]);
