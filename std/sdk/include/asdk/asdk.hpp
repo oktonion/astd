@@ -848,8 +848,11 @@ namespace asdk {
 
             };
         } // namespace type_traits
-
-        
+#       ifdef __BORLANDC__
+#       define ASDK_SFINAE_DEFAULT_FUNCTION_ARG(expr) int(*)[1] = 0
+#       else
+#       define ASDK_SFINAE_DEFAULT_FUNCTION_ARG(expr) int(*)[sizeof expr] = 0
+#       endif
         template<class T, AngelScript::asEObjTypeFlags::type ObjType>
         struct reflect
         {
@@ -917,7 +920,7 @@ namespace asdk {
             template<class Arg1T>
             reflect&
             constructor(const std::string& arg1_str
-                , int(*)[sizeof T(type_traits::declval<Arg1T>()) == sizeof(T)] = 0) {
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(T(type_traits::declval<Arg1T>()))) {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T),
                     void(*)(T&, Arg1T),
@@ -948,7 +951,7 @@ namespace asdk {
             template<class Arg1T, class Arg2T>
             reflect&
             constructor(const std::string& arg1_str, const std::string& arg2_str
-                , int(*)[sizeof T(type_traits::declval<Arg1T>(), type_traits::declval<Arg2T>()) == sizeof(T)] = 0) {
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(T(type_traits::declval<Arg1T>(), type_traits::declval<Arg2T>()))) {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T, Arg2T),
                     void(*)(T&, Arg1T, Arg2T),
@@ -1040,7 +1043,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_assign(const std::string& other_str
-                , int(*)[sizeof((*(T*)(0)) = (*(const OtherT*)(0)))] = 0)
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(sizeof((*(T*)(0)) = (*(const OtherT*)(0)))))
             {
                 return operator_assign<T, OtherT>(other_str, name, static_cast<T(*)(T&, const OtherT&)>(opAssign));
             }
@@ -1084,7 +1087,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_equal_to(const std::string& other_str
-                , int(*)[sizeof((*(const T*)(0)) == (*(const OtherT*)(0)))] = 0)
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(sizeof((*(const T*)(0)) == (*(const OtherT*)(0)))))
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
             }
@@ -1135,12 +1138,12 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_compare(const std::string &other_str
-                , int(*)
-                [
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG
+                (
                     sizeof ((*(const T*)(0)) < (*(const OtherT*)(0)))
                     +
                     sizeof ((*(const T*)(0)) > (*(const OtherT*)(0)))
-                ] = 0)
+                ))
             {
                 return operator_compare(static_cast<int(*)(const T&, const OtherT&)>(opCmp), other_str);
             }
@@ -1193,7 +1196,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_add(const std::string &other_str
-                , int(*) [ sizeof((*(const T*)(0)) + (*(const OtherT*)(0))) ] = 0)
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof((*(const T*)(0)) + (*(const OtherT*)(0))) ))
             {
                 return operator_add(static_cast<T(*)(const T&, const OtherT&)>(opAdd), other_str);
             }
@@ -1246,7 +1249,7 @@ namespace asdk {
             template<class OtherT, class ThisT>
             reflect&
             operator_add(const std::string& other_str
-                , int(*)[sizeof((*(const OtherT*)(0)) + (*(const ThisT*)(0)))] = 0)
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG((*(const OtherT*)(0)) + (*(const ThisT*)(0))))
             {
                 return operator_add(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), other_str);
             }
@@ -1381,22 +1384,27 @@ namespace asdk {
                 static int
                 template_callback_result_tester(const type_traits::arg_type_ph&);
             };
-
-            static const bool helper_type_value = sizeof(
-                reflect_helper::template_callback_result_tester< underlying_type>(
+            typedef char(&sizeof_array1)[
+                sizeof(
+                reflect_helper::template template_callback_result_tester< underlying_type>(
                     reflect_helper::template_callback_tester(T::template_callback)
-                )
-            ) == sizeof(char);
+                    ))
+            ];
+            typedef type_traits::size_is_equal< 
+                sizeof(sizeof_array1), sizeof(char)
+            > size_is_equal;
             typedef
             typename type_traits::conditional<
                 underlying_type&, type_traits::arg_type_ph,
-                reflect::helper_type_value == bool(true)
+                size_is_equal::value == bool(true)
             >::type helper_type;
 
         public:
 
             helper_type
-            template_callback() { return template_callback(T::template_callback); }
+            template_callback() { 
+                return template_callback(T::template_callback); 
+            }
 
 
         };
