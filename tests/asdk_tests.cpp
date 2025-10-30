@@ -185,17 +185,53 @@ TEST_CASE("asdk: reflection type traits")
             void(*)()
         > constructor_type_traits;
 
+        {
+            typedef int(*is_template_check_type)[constructor_type_traits::isTemplate ? 1 : -1];
+            int is_template_check[constructor_type_traits::isTemplate ? 1 : -1];
+        }
+
+        {
+            typedef constructor_type_traits::ti_reference_storage ti_reference_storage;
+
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>().GetEngine();
+
+            sizeof true ? type_traits::declval<ti_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>();
+        }
+
+        {
+            typedef constructor_type_traits::class_reference_storage class_reference_storage;
+            typedef constructor_type_traits::ti_decl_reference_storage ti_decl_reference_storage;
+
+            sizeof type_traits::declval<class_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>();
+            sizeof type_traits::declval<class_reference_storage::arg1_type>().value;
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>().GetEngine();
+
+            sizeof true ? type_traits::declval<class_reference_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>();
+            sizeof true ? type_traits::declval<ti_decl_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>();
+        }
+
         typedef
         constructor_type_traits::cdecl_objfirst::storage1
         my_value_class_ctor_storage;
         
         {
-            sizeof constructor_type_traits::type;
-            constructor_type_traits::type().value;
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().value;
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().GetEngine();
+
             sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
                 type_traits::declval<my_value_class&>();
-            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>():
+            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
                 type_traits::declval<asITypeInfo&>();
+
+            sizeof constructor_type_traits::type;
+            sizeof constructor_type_traits::type().value;
         }
         
         DOCTEST_STATIC_ASSERT((
