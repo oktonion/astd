@@ -299,7 +299,7 @@ namespace testsuite {
 
 #define SERVICE_INIT_ENGINE_RAII() struct EngineRAII: testsuite::IEngineRAII {                                                                                    \
             EngineRAII(MessageCallback_t MessageCallback = EngineRAII::MessageCallback, void* param = 0)                                                          \
-            : IEngineRAII(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                                        \
+            : testsuite::IEngineRAII(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                             \
             MessageCallback_t operator()(MessageCallback_t MessageCallback = 0, void* param = 0) const { using namespace testsuite;                               \
                 asSFuncPtr asSFuncPtr = 0; void* obj; asDWORD callConv; testsuite::asCScriptEngineHack::GetMessageCallback(engine, &asSFuncPtr, &obj, &callConv); \
                 if (MessageCallback) engine.SetMessageCallback(asFUNCTION(MessageCallback), param, asCALL_CDECL);                                                 \
