@@ -306,7 +306,11 @@ namespace asdk {
             struct remove_reference<volatile T&> { typedef volatile T type; };
 
             template<class T>
-            T declval() { throw(""); return *reinterpret_cast<typename remove_reference<T>::type*>(0); }
+            T declval() {
+                typename remove_reference<T>::type* result =
+                    reinterpret_cast<typename remove_reference<T>::type*>(0);
+                if (result) return *result; else throw("");
+            }
 
             template<int> struct sfinae_size_check {};
 
