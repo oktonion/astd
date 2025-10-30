@@ -204,8 +204,8 @@ TEST_CASE("asdk: reflection type traits")
             sizeof type_traits::declval<ti_reference_storage::arg1_type>();
             sizeof type_traits::declval<ti_reference_storage::arg1_type>().GetEngine();
 
-            sizeof true ? type_traits::declval<ti_reference_storage::arg1_type>() :
-                type_traits::declval<asITypeInfo&>();
+            sizeof (true ? type_traits::declval<ti_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>());
         }
 
         {
@@ -217,10 +217,10 @@ TEST_CASE("asdk: reflection type traits")
             sizeof type_traits::declval<class_reference_storage::arg1_type>().value;
             sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>().GetEngine();
 
-            sizeof true ? type_traits::declval<class_reference_storage::arg1_type>() :
-                type_traits::declval<my_value_class&>();
-            sizeof true ? type_traits::declval<ti_decl_reference_storage::arg1_type>() :
-                type_traits::declval<asITypeInfo&>();
+            sizeof (true ? type_traits::declval<class_reference_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>());
+            sizeof (true ? type_traits::declval<ti_decl_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>());
         }
 
         typedef
@@ -233,10 +233,10 @@ TEST_CASE("asdk: reflection type traits")
             sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().value;
             sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().GetEngine();
 
-            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
-                type_traits::declval<my_value_class&>();
-            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
-                type_traits::declval<asITypeInfo&>();
+            sizeof (true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>());
+            sizeof (true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
+                type_traits::declval<asITypeInfo&>());
 
             sizeof type_traits::declval<constructor_type_traits::type>();
             sizeof type_traits::declval<constructor_type_traits::type>().value;
@@ -401,8 +401,8 @@ TEST_CASE("asdk: reflection type traits")
             sizeof type_traits::declval<class_type>();
             sizeof type_traits::declval<class_type>().value;
 
-            sizeof true ? type_traits::declval<class_type>() :
-                type_traits::declval<my_value_class&>();
+            sizeof (true ? type_traits::declval<class_type>() :
+                type_traits::declval<my_value_class&>());
         }
 
         typedef
@@ -460,6 +460,44 @@ TEST_CASE("asdk: reflection type traits")
         }
 
         DOCTEST_STATIC_ASSERT((
+            function_type_traits::is_compatible_with_cdecl_objlast::value == bool(true)
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            function_type_traits::is_compatible_with_cdecl_objfirst::value == bool(true)
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<function_type_traits::type, my_value_class>::value
+        ), fail);
+    }
+    {
+        typedef type_traits::function <
+            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            my_value_class,
+            my_value_class(*)(int, const my_value_class&), // opAdd_r
+            my_value_class,
+            my_value_class(*)(int)
+        > function_type_traits;
+
+        typedef
+        function_type_traits::cdecl_objlast::storage1
+        my_value_class_get_val_storage;
+
+        {
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
+        }
+
+        DOCTEST_STATIC_ASSERT((
+            function_type_traits::is_compatible_with_cdecl_objlast::value == bool(true)
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            function_type_traits::is_compatible_with_cdecl_objfirst::value == bool(false)
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
         ), fail);
     }
@@ -482,7 +520,7 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("template: exposing and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, sizeof(my_value_class), asOBJ_TEMPLATE)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, sizeof(my_value_class), asOBJ_TEMPLATE, asOBJ_APP_CLASS_CONSTRUCTOR)
         );
         CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
         REQUIRE(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
@@ -539,7 +577,7 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE> reflect;
-        reflect(my_value_class_tmpl_cstr, asIScriptEngine)
+        reflect(my_value_class_tmpl_cstr, asIScriptEngine, true, false, false, false)
             .template_callback()
             .constructor()
             .constructor(&my_value_class::ctor_tmpl)
@@ -548,7 +586,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            //.operator_assign()
+            .operator_assign()
             .operator_equal_to<my_value_class>("const my_value_class<T> & in")
             .operator_compare()
             .operator+<int>("int")
@@ -565,7 +603,7 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         typedef asdk::reflect<my_value_class, asOBJ_APP_CLASS> reflect;
-        reflect(my_value_class_cstr, asIScriptEngine)
+        reflect(my_value_class_cstr, asIScriptEngine, true, false, false, false)
             .constructor()
             .constructor(&my_value_class::ctor)
             .constructor<int>("int val")
@@ -573,6 +611,7 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
+            .operator_assign()
             .operator_equal_to()
             .operator_compare<my_value_class>("const my_value_class & in")
             .operator_add<int, my_value_class>("int")
