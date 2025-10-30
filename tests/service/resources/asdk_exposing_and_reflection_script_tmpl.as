@@ -55,10 +55,10 @@ int asdk_exposing_and_reflection_test()
     }
     
     {
-        my_value_class<int> value1(2);
-        my_value_class<int> value2(3);
-        
-        auto result = value1 + value2;
+        my_value_class<int> value(2);
+		
+        value + 3;
+        auto result = value + 3;
         if (result != 5) return -10;
     }
     
