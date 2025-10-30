@@ -57,8 +57,8 @@ int asdk_exposing_and_reflection_test()
     {
         my_value_class value(2);
 		
-        value + 3;
-        auto result = value + 3;
+        3 + value;
+        auto result = 3 + value;
         if (result != 5) return -10;
     }
     
