@@ -576,21 +576,22 @@ namespace asdk {
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
 
-                enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
+                static const bool isTemplate =
+                    (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
 
-                typedef 
+                typedef
                 typename
                 conditional<
                     function_traits_storage<void, void>,
                     function_traits_storage<void, void, asITypeInfo&>,
-                    isTemplate == 0
+                    constructor::isTemplate == bool(false)
                 >::type ti_reference_storage;
-                typedef 
+                typedef
                 typename
                 conditional<
                     function_traits_storage<void, void>,
                     function_traits_storage<void, void, asITypeInfo*>,
-                    isTemplate == 0
+                    constructor::isTemplate == bool(false)
                 >::type ti_pointer_storage;
                 typedef function_traits_storage<void, void, ClassT&>   class_reference_storage;
                 typedef function_traits_storage<void, void, ClassT*>     class_pointer_storage;
@@ -841,7 +842,9 @@ namespace asdk {
         {
             typedef AngelScript::asITypeInfo asITypeInfo;
             typedef AngelScript::asECallConvTypes::type asECallConvTypes;
-            enum { isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? 1 : 0 };
+
+            static const bool isTemplate =
+                (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine &asIScriptEngine) : asIScriptEngine(&asIScriptEngine), name(name) {
                 init();
@@ -852,7 +855,7 @@ namespace asdk {
             template<class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)()>::type
             constructor(FuncT func) {
-                const char* ctor_cstr = isTemplate != 0 ? "void ctor(int&in)" : "void ctor()";
+                const char* ctor_cstr = isTemplate ? "void ctor(int&in)" : "void ctor()";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)()> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -874,7 +877,7 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&),
                     void(*)(T&),
-                    isTemplate != 0
+                    reflect::isTemplate == bool(true)
                 >::type FuncT;
                 return constructor(static_cast<FuncT>(&ctor));
             }
@@ -882,7 +885,7 @@ namespace asdk {
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)(Arg1T)>::type
             constructor(const std::string& arg1_str, FuncT func) {
-                const std::string ctor_str = (isTemplate != 0 ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
+                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -905,7 +908,7 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T),
                     void(*)(T&, Arg1T),
-                    isTemplate != 0
+                    isTemplate == bool(true)
                 >::type FuncT;
                 return constructor<Arg1T>(arg1_str, static_cast<FuncT>(&ctor));
             }
@@ -913,7 +916,7 @@ namespace asdk {
             template<class Arg1T, class Arg2T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
             constructor(const std::string& arg1_str, const std::string& arg2_str, FuncT func) {
-                const std::string ctor_str = (isTemplate != 0 ? "void ctor(int&in, " : "void ctor(") + arg1_str + ", " + arg2_str + ")";
+                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") + arg1_str + ", " + arg2_str + ")";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T, Arg2T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -936,7 +939,7 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T, Arg2T),
                     void(*)(T&, Arg1T, Arg2T),
-                    isTemplate != 0
+                    reflect::isTemplate == bool(true)
                 >::type FuncT;
                 return constructor<Arg1T>(arg1_str, arg2_str, static_cast<FuncT>(&ctor));
             }
