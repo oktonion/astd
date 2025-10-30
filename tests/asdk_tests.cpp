@@ -189,6 +189,11 @@ TEST_CASE("asdk: reflection type traits")
         constructor_type_traits::cdecl_objfirst::storage1
         my_value_class_ctor_storage;
 
+        {
+            sizeof constructor_type_traits::type;
+            constructor_type_traits::type().value;
+        }
+
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
         ), fail);
@@ -313,7 +318,10 @@ TEST_CASE("asdk: reflection type traits")
                 type_traits::is_same<my_value_class_ctor_storage::arg3_type, float>::value
             ), fail);
         }
-        
+        {
+            sizeof constructor_type_traits::type;
+            constructor_type_traits::type().value;
+        }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
@@ -332,6 +340,11 @@ TEST_CASE("asdk: reflection type traits")
         function_type_traits::cdecl_or_thiscall::storage1
         my_value_class_get_val_storage;
 
+        {
+            sizeof function_type_traits::type;
+            function_type_traits::type().value;
+        }
+
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
         ), fail);
@@ -347,6 +360,11 @@ TEST_CASE("asdk: reflection type traits")
         typedef
         function_type_traits::cdecl_or_thiscall::storage1
         my_value_class_get_val_storage;
+
+        {
+            sizeof function_type_traits::type;
+            function_type_traits::type().value;
+        }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
@@ -364,6 +382,11 @@ TEST_CASE("asdk: reflection type traits")
         typedef
         function_type_traits::cdecl_objfirst::storage1
         my_value_class_get_val_storage;
+
+        {
+            sizeof function_type_traits::type;
+            function_type_traits::type().value;
+        }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
