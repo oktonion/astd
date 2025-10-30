@@ -1417,6 +1417,8 @@ namespace asdk {
         };
 
     }
+
+#   undef ASDK_SFINAE_DEFAULT_FUNCTION_ARG
 }
 
 namespace asdk {
