@@ -10,7 +10,6 @@
 #include <cstring>
 #include <fstream>
 
-
 SERVICE_FILE_TRANSLATION_YYMMDD_DATE(TRANSLATION_YYMMDD_DATE);
 SERVICE_FILE_TRANSLATION_HHMMSS_TIME(TRANSLATION_HHMMSS_TIME);
 
@@ -49,12 +48,8 @@ public:
     }
 
     // Operator overloads
-    friend my_value_class operator+(const my_value_class& lhs, int rhs) {
-        return my_value_class(lhs.value + rhs);
-    }
-    friend my_value_class operator+(int lhs, const my_value_class& rhs) {
-        return my_value_class(lhs + rhs.value);
-    }
+    friend my_value_class operator+(const my_value_class& lhs, int rhs);
+    friend my_value_class operator+(int lhs, const my_value_class& rhs);
 
     int value;
     int another_value;
@@ -103,6 +98,13 @@ bool operator==(
     return lhs.value == rhs.value;
 }
 
+my_value_class operator+(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value + rhs);
+}
+my_value_class operator+(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs + rhs.value);
+}
+
 int operator_compare(
     const my_value_class& lhs, const my_value_class& rhs
 )
@@ -116,6 +118,7 @@ TEST_CASE("asdk: reflection type traits")
 {
     namespace type_traits = asdk::reflection::type_traits;
     namespace AngelScript = asdk::AngelScript;
+#ifndef __BORLANDC__
     {
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
@@ -172,6 +175,7 @@ TEST_CASE("asdk: reflection type traits")
             >::value == bool(true)
         ), fail);
     }
+#endif
     {
         typedef type_traits::constructor <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
