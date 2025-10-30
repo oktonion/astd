@@ -118,56 +118,64 @@ TEST_CASE("asdk: reflection type traits")
 {
     namespace type_traits = asdk::reflection::type_traits;
     namespace AngelScript = asdk::AngelScript;
-#ifndef __BORLANDC__
+#   ifndef __BORLANDC__
     {
+        typedef int (my_value_class::*member_function_const)() const;
+        typedef int (my_value_class::*member_function)();
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
-                , int (my_value_class::*)() const
+                  member_function_const
+                , member_function_const
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
-                , int (my_value_class::*)()
+                  member_function_const
+                , member_function
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
+                  member_function_const
                 , int (*)()
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , int (*)()
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , float (*)()
             >::value == bool(false)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , type_traits::arg_type_ph (*)()
             >::value == bool(true)
         ), fail);
+    }
+    {
+        typedef int (my_value_class::* member_function)(float);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)(float)
+                  member_function
                 , type_traits::arg_type_ph (*)(float)
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)(float)
+                  member_function
                 , type_traits::arg_type_ph (*)(type_traits::arg_type_ph)
             >::value == bool(true)
         ), fail);
+    }
+#   endif
+    {
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
                   int (*)()
@@ -175,7 +183,7 @@ TEST_CASE("asdk: reflection type traits")
             >::value == bool(true)
         ), fail);
     }
-#endif
+
     {
         typedef type_traits::constructor <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
@@ -230,8 +238,8 @@ TEST_CASE("asdk: reflection type traits")
             sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
                 type_traits::declval<asITypeInfo&>();
 
-            sizeof constructor_type_traits::type;
-            sizeof constructor_type_traits::type().value;
+            sizeof type_traits::declval<constructor_type_traits::type>();
+            sizeof type_traits::declval<constructor_type_traits::type>().value;
         }
         
         DOCTEST_STATIC_ASSERT((
@@ -367,30 +375,43 @@ TEST_CASE("asdk: reflection type traits")
             ), fail);
         }
         {
-            sizeof constructor_type_traits::type;
-            constructor_type_traits::type().value;
+            sizeof type_traits::declval<constructor_type_traits::type>();
+            sizeof type_traits::declval<constructor_type_traits::type>().value;
         }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
         ), fail);
     }
+#   ifndef __BORLANDC__
     {
+        typedef int (my_value_class::* get_val_type)() const;
         typedef type_traits::function <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
             my_value_class,
-            int (my_value_class::*)() const, // my_value_class::get_val
+            get_val_type, // my_value_class::get_val
             my_value_class,
             int(*)()
         > function_type_traits;
+
+
+        {
+            typedef function_type_traits::class_type class_type;
+
+            sizeof type_traits::declval<class_type>();
+            sizeof type_traits::declval<class_type>().value;
+
+            sizeof true ? type_traits::declval<class_type>() :
+                type_traits::declval<my_value_class&>();
+        }
 
         typedef
         function_type_traits::cdecl_or_thiscall::storage1
         my_value_class_get_val_storage;
 
         {
-            sizeof function_type_traits::type;
-            function_type_traits::type().value;
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
         }
 
         DOCTEST_STATIC_ASSERT((
@@ -398,10 +419,11 @@ TEST_CASE("asdk: reflection type traits")
         ), fail);
     }
     {
+        typedef void (my_value_class::* set_val_type)(int);
         typedef type_traits::function <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
             my_value_class,
-            void (my_value_class::*)(int), // my_value_class::set_val
+            set_val_type, // my_value_class::set_val
             my_value_class
         > function_type_traits;
 
@@ -410,14 +432,15 @@ TEST_CASE("asdk: reflection type traits")
         my_value_class_get_val_storage;
 
         {
-            sizeof function_type_traits::type;
-            function_type_traits::type().value;
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
         }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
         ), fail);
     }
+#   endif
     {
         typedef type_traits::function <
             AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
@@ -432,8 +455,8 @@ TEST_CASE("asdk: reflection type traits")
         my_value_class_get_val_storage;
 
         {
-            sizeof function_type_traits::type;
-            function_type_traits::type().value;
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
         }
 
         DOCTEST_STATIC_ASSERT((
