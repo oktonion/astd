@@ -35,6 +35,8 @@ namespace asdk {
     namespace AngelScript {
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asSMessageInfo;
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asDWORD;
+        using ASDK_ANGELSCRIPT_NS_QUALIFIER asQWORD;
+        using ASDK_ANGELSCRIPT_NS_QUALIFIER asWORD;
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asIScriptEngine;
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asIScriptContext;
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asSFuncPtr;
@@ -173,13 +175,19 @@ namespace asdk {
             typedef asdk::AngelScript::asSFuncPtr asSFuncPtr; 
             typedef asdk::AngelScript::asIScriptEngine asIScriptEngine;
             typedef asdk::AngelScript::asITypeInfo asITypeInfo;
+            typedef asdk::AngelScript::asQWORD asQWORD;
             
             expose(asIScriptEngine& engine, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
                 : engine(&engine), obj()   , objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
             expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
                 : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flag1, asEObjTypeFlags flag2)
+                : engine(&engine), obj(obj), objSize(objSize), decl(), func(func), callConv(asECallConvTypes()), flags(flag1 | flag2) {
+                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
+                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+            }
             expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flags)
-                : engine(&engine), obj(obj), objSize(objSize), decl()    , func(func), callConv(asECallConvTypes())        , flags(flags) {
+                : engine(&engine), obj(obj), objSize(objSize), decl()    , func(func), callConv(asECallConvTypes()), flags(flags) {
                 if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
                 if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
             }
@@ -291,6 +299,16 @@ namespace asdk {
             typedef is_same<void, void> true_type;
             typedef is_same<void, float> false_type;
 
+            template<class>
+            struct is_const : false_type {};
+            template<class T>
+            struct is_const<const T> : true_type {};
+
+            template<class>
+            struct is_reference : false_type {};
+            template<class T>
+            struct is_reference<T&> : true_type {};
+
             template<class IfTrueT, class IfFalseT, bool>
             struct conditional {  typedef IfTrueT type; };
             template<class IfTrueT, class IfFalseT>
@@ -306,11 +324,12 @@ namespace asdk {
             struct remove_reference<volatile T&> { typedef volatile T type; };
 
             template<class T>
-            T declval() {
-                typename remove_reference<T>::type* result =
-                    reinterpret_cast<typename remove_reference<T>::type*>(0);
-                if (result) return *result; else throw("");
-            }
+            T declval();
+            //{
+            //    typename remove_reference<T>::type* result =
+            //        reinterpret_cast<typename remove_reference<T>::type*>(0);
+            //    if (result) return *result; else throw("");
+            //}
 
             template<int> struct sfinae_size_check {};
 
@@ -853,6 +872,23 @@ namespace asdk {
 #       else
 #       define ASDK_SFINAE_DEFAULT_FUNCTION_ARG(expr) int(*)[sizeof expr] = 0
 #       endif
+
+        struct object_traits {
+            struct {
+                bool default_constructor;
+                bool custom_destructor;
+                bool custom_assigment_operator;
+                bool custom_copy_constructor;
+            } has;
+            
+            struct {
+                bool floating_point;
+                bool primitive_type;
+                bool class_or_struct;
+                bool c_array;
+            } is;
+        };
+
         template<class T, AngelScript::asEObjTypeFlags::type ObjType>
         struct reflect
         {
@@ -862,12 +898,34 @@ namespace asdk {
             static const bool isTemplate =
                 (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
 
-            reflect(const std::string& name, AngelScript::asIScriptEngine &asIScriptEngine) : asIScriptEngine(&asIScriptEngine), name(name) {
-                init();
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , const object_traits& object_traits) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init(object_traits);
             }
-            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : asIScriptEngine(&asIScriptEngine), name(name) {
-                init();
+
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , const object_traits& object_traits) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init(object_traits);
             }
+
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init(T_object_traits(has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor));
+            }
+
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : asIScriptEngine(&asIScriptEngine), name(name) {
+                init(T_object_traits(has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor));
+            }
+
             template<class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)()>::type
             constructor(FuncT func) {
@@ -901,7 +959,7 @@ namespace asdk {
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)(Arg1T)>::type
             constructor(const std::string& arg1_str, FuncT func) {
-                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") + arg1_str + ")";
+                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") + format_function_argument<Arg1T>(arg1_str) + ")";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -914,7 +972,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE_CONSTRUCT, asFunc, asCALL);
                 return *this;
             }
             template<class Arg1T>
@@ -932,7 +990,11 @@ namespace asdk {
             template<class Arg1T, class Arg2T, class FuncT>
             typename type_traits::constructor<ObjType, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
             constructor(const std::string& arg1_str, const std::string& arg2_str, FuncT func) {
-                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") + arg1_str + ", " + arg2_str + ")";
+                const std::string ctor_str = (isTemplate ? "void ctor(int&in, " : "void ctor(") 
+                    + format_function_argument<Arg1T>(arg1_str) 
+                    + ", " 
+                    + format_function_argument<Arg1T>(arg2_str) 
+                    + ")";
 
                 typedef type_traits::constructor<ObjType, T, FuncT, reflect, void(*)(Arg1T, Arg2T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -945,7 +1007,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, ctor_str.c_str(), asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE_CONSTRUCT, asFunc, asCALL);
                 return *this;
             }
             template<class Arg1T, class Arg2T>
@@ -1008,7 +1070,7 @@ namespace asdk {
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , FuncT func)
             {
-                const std::string op_str = return_str + " opAssign(" + other_str + ")";
+                const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + ")";
             
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1021,7 +1083,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
                 return *this;
             }
 
@@ -1034,18 +1096,24 @@ namespace asdk {
             }
 
             template<class FuncT>
-            typename type_traits::function<ObjType, T, FuncT, reflect&, T(*)(T)>::type
+            typename type_traits::function<ObjType, T, FuncT, reflect&, T(*)(const T&)>::type
             operator_assign(FuncT func)
             {
-                return operator_assign<T, FuncT>(name, func);
+                return operator_assign<const T&>(name, func);
             }
 
             template<class OtherT>
             reflect&
             operator_assign(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(sizeof((*(T*)(0)) = (*(const OtherT*)(0)))))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(((*(T*)(0)) = (*(const OtherT*)(0)))))
             {
                 return operator_assign<T, OtherT>(other_str, name, static_cast<T(*)(T&, const OtherT&)>(opAssign));
+            }
+
+            reflect&
+            operator_assign(int(*)[sizeof((*(T*)(0)) = (*(const T*)(0)))] = 0)
+            {
+                return operator_assign(static_cast<T(*)(T&, const T&)>(opAssign));
             }
             
             template<class OtherT, class FuncT>
@@ -1053,7 +1121,7 @@ namespace asdk {
             operator_equal_to(FuncT func
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, bool(*)(OtherT)>::type other_str)
             {
-                const std::string op_str = "bool opEquals(" + other_str + ") const";
+                const std::string op_str = "bool opEquals(" + format_function_argument<OtherT>(other_str) + ") const";
             
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, bool(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1066,7 +1134,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
                 return *this;
             }
             
@@ -1104,7 +1172,7 @@ namespace asdk {
             operator_compare(FuncT func
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, int(*)(OtherT)>::type other_str)
             {
-                const std::string op_str = "int opCmp(" + other_str + ") const";
+                const std::string op_str = "int opCmp(" + format_function_argument<OtherT>(other_str) + ") const";
             
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, int(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1117,7 +1185,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
                 return *this;
             }
             
@@ -1154,7 +1222,7 @@ namespace asdk {
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str)
             {
-                const std::string op_str = return_str + " opAdd(" + other_str + ") const";
+                const std::string op_str = return_str + " opAdd(" + format_function_argument<OtherT>(other_str) + ") const";
             
                 typedef type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1167,7 +1235,7 @@ namespace asdk {
                     : (
                     asCALL_THISCALL);
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
                 return *this;
             }
 
@@ -1198,7 +1266,7 @@ namespace asdk {
             operator_add(const std::string &other_str
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof((*(const T*)(0)) + (*(const OtherT*)(0))) ))
             {
-                return operator_add(static_cast<T(*)(const T&, const OtherT&)>(opAdd), other_str);
+                return operator_add(static_cast<T(*)(const T&, OtherT)>(opAdd), other_str);
             }
 
             reflect&
@@ -1216,25 +1284,22 @@ namespace asdk {
             }
 
             template<class ReturnT, class OtherT, class ThisT, class FuncT>
-            typename type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT, ThisT)>::type
+            typename type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
             operator_add(FuncT func
-                , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type return_str
-                , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type other_str)
+                , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
+                , typename type_traits::conditional<const std::string&, void,
+                    type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::
+                        is_compatible_with_cdecl_objlast::value == bool(true)
+                >::type other_str)
             {
-                const std::string op_str = return_str + " opAdd_r(" + other_str + ") const";
+                const std::string op_str = return_str + " opAdd_r(" + format_function_argument<OtherT>(other_str) + ") const";
             
-                typedef type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT, ThisT)> op_traits;
+                typedef type_traits::function<ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
-                const asECallConvTypes asCALL =
-                    type_traits::is_same< class_type, void>::value ? (
-                        op_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
-                        op_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
-                    asCALL_CDECL)
-                    : (
-                    asCALL_THISCALL);
+                const asECallConvTypes asCALL = asCALL_CDECL_OBJLAST;
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, op_str.c_str(), asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
                 return *this;
             }
 
@@ -1251,7 +1316,7 @@ namespace asdk {
             operator_add(const std::string& other_str
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(((*(const OtherT*)(0)) + (*(const ThisT*)(0)))))
             {
-                return operator_add(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), other_str);
+                return operator_add<T, const OtherT&, const ThisT&>(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), name, other_str);
             }
 
         protected:
@@ -1259,19 +1324,58 @@ namespace asdk {
             std::string name;
             std::vector<asdk::expose> entities;
             //void expose(const asdk::expose& entity) { entities.push_back(entity); }
-            void init()
+            void init(const object_traits &object_traits)
             {
-                asdk::expose(*asIScriptEngine, name, sizeof(T), ObjType);
+                using namespace AngelScript;
+
+                asDWORD flags;
+                const bool is_pod = (0 != (asDWORD(ObjType) & asOBJ_POD));
+                const bool is_enum = (0 != (asDWORD(ObjType) & asOBJ_ENUM));
+                const bool is_union = (0 != (asDWORD(ObjType) & asOBJ_APP_CLASS_UNION));
+                const bool is_template = (0 != (asDWORD(ObjType) & asOBJ_TEMPLATE));
+
+                if (object_traits.is.floating_point)
+                    flags = asOBJ_APP_FLOAT;
+                if (object_traits.is.primitive_type)
+                    flags = asOBJ_APP_PRIMITIVE;
+
+                if (object_traits.is.class_or_struct)
+                {
+                    flags = asOBJ_APP_CLASS;
+                    if (object_traits.has.default_constructor)
+                        flags |= asOBJ_APP_CLASS_CONSTRUCTOR;
+                    if (object_traits.has.custom_destructor)
+                        flags |= asOBJ_APP_CLASS_DESTRUCTOR;
+                    if (object_traits.has.custom_assigment_operator)
+                        flags |= asOBJ_APP_CLASS_ASSIGNMENT;
+                    if (object_traits.has.custom_copy_constructor)
+                        flags |= asOBJ_APP_CLASS_COPY_CONSTRUCTOR;
+                }
+
+                if (object_traits.is.c_array)
+                    flags = asOBJ_APP_ARRAY;
+
+                if (is_pod) flags |= asOBJ_POD;
+                if (is_enum) flags |= asOBJ_ENUM;
+                if (is_template) flags |= asOBJ_TEMPLATE;
+
+                const AngelScript::asEObjTypeFlags::type all_flags32 =
+                    AngelScript::asEObjTypeFlags::type(flags);
+
+                if (is_union)//?????
+                    asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
+                else
+                    asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
             }
 
             template<class ThisT, class OtherT>
-            inline static T opAdd(const ThisT& lhs, const OtherT& rhs) // objfirst
+            inline static T opAdd(ThisT lhs, OtherT rhs) // objfirst
             {
                 return lhs + rhs;
             }
 
             template<class OtherT>
-            inline static int opCmp(const T& lhs, const OtherT& rhs) // objfirst
+            inline static int opCmp(const T& lhs, OtherT rhs) // objfirst
             {
                 if (lhs < rhs)
                     return -1;
@@ -1290,7 +1394,7 @@ namespace asdk {
             }
 
             template<class OtherT>
-            inline static bool opEquals(const T& lhs, const OtherT& rhs) // objfirst
+            inline static bool opEquals(const T& lhs, OtherT rhs) // objfirst
             {
                 return lhs == rhs;
             }
@@ -1301,7 +1405,7 @@ namespace asdk {
             }
 
             template<class ThisT, class OtherT>
-            inline static T opAssign(const ThisT& lhs, const OtherT& rhs) // objfirst
+            inline static T opAssign(ThisT& lhs, OtherT rhs) // objfirst
             {
                 return lhs = rhs;
             }
@@ -1341,6 +1445,61 @@ namespace asdk {
             {
                 new (&that) T(arg1, arg2);
             }
+
+            static object_traits T_object_traits(
+                  bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) {
+                object_traits result;
+                const asDWORD flags = ObjType;
+
+                result.has.default_constructor = has_default_constructor;
+                result.has.custom_destructor = has_custom_destructor;
+                result.has.custom_assigment_operator = has_custom_assigment_operator;
+                result.has.custom_copy_constructor = has_custom_copy_constructor;
+
+                result.is.class_or_struct = true; 
+                result.is.c_array = false;
+                result.is.floating_point = false;
+                result.is.primitive_type = false;
+
+                if (result.is.class_or_struct)
+                {
+                    if (0 != (flags & asOBJ_APP_CLASS_CONSTRUCTOR)) result.has.default_constructor = true;
+                    if (0 != (flags & asOBJ_APP_CLASS_DESTRUCTOR)) result.has.custom_destructor = true;
+                    if (0 != (flags & asOBJ_APP_CLASS_ASSIGNMENT)) result.has.custom_assigment_operator = true;
+                    if (0 != (flags & asOBJ_APP_CLASS_COPY_CONSTRUCTOR)) result.has.custom_copy_constructor = true;
+                }
+
+                return result;
+            }
+
+            template<class OtherT>
+            static std::string format_function_argument(const std::string& other_str)
+            {
+                typedef type_traits::is_const<
+                    typename type_traits::remove_reference<OtherT>::type
+                > is_reference_to_const_or_const;
+                std::string prefix, suffix;
+                std::string::size_type pos;
+                if (is_reference_to_const_or_const::value &&
+                    (pos = other_str.find("const")) == std::string::npos)
+                    prefix = "const ";
+                if (type_traits::is_reference<OtherT>::value &&
+                    (pos = other_str.find("&")) == std::string::npos)
+                    suffix = " &";
+                if (is_reference_to_const_or_const::value
+                    && type_traits::is_reference<OtherT>::value
+                    && (
+                    (pos = other_str.find("in")) == std::string::npos
+                        || (pos < other_str.length() - 2 && other_str[pos + 2] != ' ')
+                    )
+                    ) // if
+                    suffix += " in";
+                return prefix + other_str + suffix;
+            }
         };
 
 
@@ -1349,10 +1508,27 @@ namespace asdk {
             : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)>
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
-            
-            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine) : underlying_type(name, asIScriptEngine) {}
-            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
-            
+
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
+
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
+
+            reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : underlying_type(name, asIScriptEngine, has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor) {}
+
+            reflect(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : underlying_type(name, asIScriptEngine, has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor) {}
+
             template<class FuncT> 
             typename type_traits::template_callback<FuncT, underlying_type&>::type
             template_callback(FuncT func) {
@@ -1412,8 +1588,26 @@ namespace asdk {
             : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> 
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
-            reflect_template(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine): underlying_type(name, asIScriptEngine) {}
-            reflect_template(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name) : underlying_type(name, asIScriptEngine) {}
+
+            reflect_template(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
+
+            reflect_template(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
+
+            reflect_template(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : underlying_type(name, asIScriptEngine, has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor) {}
+
+            reflect_template(AngelScript::asIScriptEngine& asIScriptEngine, const std::string& name
+                , bool has_default_constructor
+                , bool has_custom_destructor
+                , bool has_custom_assigment_operator
+                , bool has_custom_copy_constructor
+            ) : underlying_type(name, asIScriptEngine, has_default_constructor, has_custom_destructor, has_custom_assigment_operator, has_custom_copy_constructor) {}
         };
 
     }
