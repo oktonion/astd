@@ -181,6 +181,11 @@ namespace asdk {
                 : engine(&engine), obj()   , objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
             expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asSFuncPtr func, asECallConvTypes callConv)
                 : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
+            expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flag1, asEObjTypeFlags flag2, asEObjTypeFlags flag3)
+                : engine(&engine), obj(obj), objSize(objSize), decl(), func(func), callConv(asECallConvTypes()), flags(flag1 | flag2 | flag3) {
+                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
+                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+            }
             expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flag1, asEObjTypeFlags flag2)
                 : engine(&engine), obj(obj), objSize(objSize), decl(), func(func), callConv(asECallConvTypes()), flags(flag1 | flag2) {
                 if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
@@ -296,8 +301,8 @@ namespace asdk {
             struct is_same { static const bool value = false; };
             template<class T>
             struct is_same<T,T> { static const bool value = true; };
-            typedef is_same<void, void> true_type;
-            typedef is_same<void, float> false_type;
+            struct true_type  :is_same<void, void> { char dummy[1]; };
+            struct false_type :is_same<void, float> { char dummy[16]; };
 
             template<class>
             struct is_const : false_type {};
@@ -889,14 +894,14 @@ namespace asdk {
             } is;
         };
 
-        template<class T, AngelScript::asEObjTypeFlags::type ObjType>
+        template<class T, AngelScript::asEObjTypeFlags::type ObjType
+            , bool = bool( (ObjType& AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE))>
         struct reflect
         {
+            static const bool isTemplate = (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
+
             typedef AngelScript::asITypeInfo asITypeInfo;
             typedef AngelScript::asECallConvTypes::type asECallConvTypes;
-
-            static const bool isTemplate =
-                (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
                 , const object_traits& object_traits) : asIScriptEngine(&asIScriptEngine), name(name) {
@@ -1288,8 +1293,8 @@ namespace asdk {
             operator_add(FuncT func
                 , typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , typename type_traits::conditional<const std::string&, void,
-                    type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::
-                        is_compatible_with_cdecl_objlast::value == bool(true)
+                    sizeof (typename type_traits::function<ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::
+                        is_compatible_with_cdecl_objlast) == sizeof (type_traits::true_type)
                 >::type other_str)
             {
                 const std::string op_str = return_str + " opAdd_r(" + format_function_argument<OtherT>(other_str) + ") const";
@@ -1503,11 +1508,11 @@ namespace asdk {
         };
 
 
-        template<class T>
-        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
-            : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)>
+        template<class T, AngelScript::asEObjTypeFlags::type ObjType>
+        struct reflect<T, ObjType, true>
+            : reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | ObjType), false>
         {
-            typedef reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE)> underlying_type;
+            typedef reflect<T, AngelScript::asEObjTypeFlags::type (asDWORD(AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) | ObjType), false> underlying_type;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
                 , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}

@@ -520,7 +520,7 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("template: exposing and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, sizeof(my_value_class), asOBJ_TEMPLATE, asOBJ_APP_CLASS_CONSTRUCTOR)
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, sizeof(my_value_class), asOBJ_TEMPLATE, asOBJ_APP_CLASS_CONSTRUCTOR, asOBJ_APP_CLASS_ALLINTS)
         );
         CHECK(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
         REQUIRE(asIScriptEngine.GetTypeInfoByDecl(my_value_class_tmpl_cstr));
@@ -576,7 +576,7 @@ TEST_CASE("asdk: exposing and reflection")
 
     SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
-        typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE> reflect;
+        typedef asdk::reflect<my_value_class, asdk::AngelScript::asEObjTypeFlags::type(asOBJ_TEMPLATE| asOBJ_APP_CLASS_ALLINTS)> reflect;
         reflect(my_value_class_tmpl_cstr, asIScriptEngine, true, false, false, false)
             .template_callback()
             .constructor()
@@ -602,7 +602,7 @@ TEST_CASE("asdk: exposing and reflection")
 
     SUBCASE("reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
-        typedef asdk::reflect<my_value_class, asOBJ_APP_CLASS> reflect;
+        typedef asdk::reflect<my_value_class, asOBJ_APP_CLASS_ALLINTS> reflect;
         reflect(my_value_class_cstr, asIScriptEngine, true, false, false, false)
             .constructor()
             .constructor(&my_value_class::ctor)
