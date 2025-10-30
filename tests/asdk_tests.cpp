@@ -188,11 +188,23 @@ TEST_CASE("asdk: reflection type traits")
         typedef
         constructor_type_traits::cdecl_objfirst::storage1
         my_value_class_ctor_storage;
-
+        
         {
             sizeof constructor_type_traits::type;
             constructor_type_traits::type().value;
+            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>();
+            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>():
+                type_traits::declval<asITypeInfo&>();
         }
+        
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg2_type, asITypeInfo&>::value
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg1_type, my_value_class&>::value
+        ), fail);
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
