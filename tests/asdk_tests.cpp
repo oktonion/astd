@@ -521,8 +521,12 @@ TEST_CASE("asdk: exposing and reflection")
                 , asFUNCTIONPR(operator_compare, (const my_value_class&, const my_value_class&), int), asCALL_CDECL_OBJFIRST)
         );
         REQUIRE_NOTHROW(
-            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opAdd(const ") + my_value_class_tmpl_cstr + " & in) const"
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opAdd(int) const")
                 , asFUNCTIONPR(operator+, (const my_value_class&, int), my_value_class), asCALL_CDECL_OBJFIRST)
+        );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string("& opAssign(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asMETHODPR(my_value_class, operator=, (const my_value_class&), my_value_class&), asCALL_THISCALL)
         );
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
