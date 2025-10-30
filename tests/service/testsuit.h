@@ -43,55 +43,63 @@
 #include ANGELSCRIPT_LIB_SRC_H_PATH(as_scriptengine)
 #include ANGELSCRIPT_SCRIPTBUILDER_H_PATH
 
-#define SERVICE_FILE_TRANSLATION_YYMMDD_DATE(name)                                         \
-    const char name[] =                                                                    \
-    {                                                                                      \
-        /* YY year */                                                                      \
-        __DATE__[9], __DATE__[10],                                                         \
-                                                                                           \
-        /* First month letter, Oct Nov Dec = '1' otherwise '0' */                          \
-        (__DATE__[0] == 'O' || __DATE__[0] == 'N' || __DATE__[0] == 'D') ? '1' : '0',      \
-                                                                                           \
-        /* Second month letter */                                                          \
-        (__DATE__[0] == 'J') ? ((__DATE__[1] == 'a') ? '1' :       /* Jan, Jun or Jul */   \
-                                 ((__DATE__[2] == 'n') ? '6' : '7')) :                     \
-        (__DATE__[0] == 'F') ? '2' :                                /* Feb */              \
-        (__DATE__[0] == 'M') ? (__DATE__[2] == 'r') ? '3' : '5' :   /* Mar or May */       \
-        (__DATE__[0] == 'A') ? (__DATE__[1] == 'p') ? '4' : '8' :   /* Apr or Aug */       \
-        (__DATE__[0] == 'S') ? '9' :                                /* Sep */              \
-        (__DATE__[0] == 'O') ? '0' :                                /* Oct */              \
-        (__DATE__[0] == 'N') ? '1' :                                /* Nov */              \
-        (__DATE__[0] == 'D') ? '2' :                                /* Dec */              \
-        0,                                                                                 \
-                                                                                           \
-        /* First day letter, replace space with digit */                                   \
-        __DATE__[4] == ' ' ? '0' : __DATE__[4],                                            \
-                                                                                           \
-        /* Second day letter */                                                            \
-        __DATE__[5],                                                                       \
-                                                                                           \
-       '\0'                                                                                \
+#define SERVICE_FILE_TRANSLATION_YYMMDD_DATE(name)                                           \
+    const char name[] =                                                                      \
+    {                                                                                        \
+        /* YY year */                                                                        \
+        *(__DATE__+9), *(__DATE__+10),                                                       \
+                                                                                             \
+        /* First month letter, Oct Nov Dec = '1' otherwise '0' */                            \
+        (*(__DATE__+0) == 'O' || *(__DATE__+0) == 'N' || *(__DATE__+0) == 'D') ? '1' : '0',  \
+                                                                                             \
+        /* Second month letter */                                                            \
+        (*(__DATE__+0) == 'J') ? ((*(__DATE__+1) == 'a') ? '1' :       /* Jan, Jun or Jul */ \
+                                 ((*(__DATE__+2) == 'n') ? '6' : '7')) :                     \
+        (*(__DATE__+0) == 'F') ? '2' :                                /* Feb */              \
+        (*(__DATE__+0) == 'M') ? (*(__DATE__+2) == 'r') ? '3' : '5' :   /* Mar or May */     \
+        (*(__DATE__+0) == 'A') ? (*(__DATE__+1) == 'p') ? '4' : '8' :   /* Apr or Aug */     \
+        (*(__DATE__+0) == 'S') ? '9' :                                /* Sep */              \
+        (*(__DATE__+0) == 'O') ? '0' :                                /* Oct */              \
+        (*(__DATE__+0) == 'N') ? '1' :                                /* Nov */              \
+        (*(__DATE__+0) == 'D') ? '2' :                                /* Dec */              \
+        0,                                                                                   \
+                                                                                             \
+        /* First day letter, replace space with digit */                                     \
+        *(__DATE__+4) == ' ' ? '0' : *(__DATE__+4),                                          \
+                                                                                             \
+        /* Second day letter */                                                              \
+        *(__DATE__+5),                                                                       \
+                                                                                             \
+       '\0'                                                                                  \
     };
 
-#define SERVICE_FILE_TRANSLATION_HHMMSS_TIME(name)                                         \
-    const char name[] = {                                                                  \
-        __TIME__[0], __TIME__[1], __TIME__[3], __TIME__[4], __TIME__[6], __TIME__[7], '\0' \
+#define SERVICE_FILE_TRANSLATION_HHMMSS_TIME(name)                                                     \
+    const char name[] = {                                                                              \
+        *(__TIME__+0), *(__TIME__+1), *(__TIME__+3), *(__TIME__+4), *(__TIME__+6), *(__TIME__+7), '\0' \
     };
 
 #define SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(name) \
             static void name(const ANGELSCRIPT_NS_QUALIFIER asSMessageInfo* asSMessageInfo, void*)                                                                                     \
-            {                                                                                                                                                                          \
+            {   ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext = asGetActiveContext();                                                                                    \
                 if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_WARNING == asSMessageInfo->type)                                                                                                \
                 {                                                                                                                                                                      \
                     DOCTEST_WARN_MESSAGE(asSMessageInfo, asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);  \
                 }                                                                                                                                                                      \
                 else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_INFORMATION == asSMessageInfo->type)                                                                                       \
                 {                                                                                                                                                                      \
-                    DOCTEST_MESSAGE(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                       \
+                    if (asIScriptContext)                                                                                                                                              \
+                        DOCTEST_ADD_MESSAGE_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                                     \
+                                asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                           \
+                    else                                                                                                                                                               \
+                        DOCTEST_MESSAGE(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                   \
                 }                                                                                                                                                                      \
                 else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_ERROR == asSMessageInfo->type)                                                                                             \
                 {                                                                                                                                                                      \
-                    DOCTEST_FAIL_CHECK(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                    \
+                    if (asIScriptContext)                                                                                                                                              \
+                        DOCTEST_ADD_FAIL_CHECK_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                                  \
+                            asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                               \
+                    else                                                                                                                                                               \
+                        DOCTEST_FAIL_CHECK(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                \
                 }                                                                                                                                                                      \
                 else throw(asSMessageInfo->message);                                                                                                                                   \
             }
@@ -99,7 +107,8 @@
 #define SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(name) \
             static void name(ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext, void*)                                                                                   \
             {                                                                                                                                                                      \
-                DOCTEST_MESSAGE("unhandled exception caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());            \
+                DOCTEST_ADD_MESSAGE_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asIScriptContext->GetExceptionLineNumber(),                                  \
+                        "unhandled exception caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());                    \
             }
 
 #ifdef AS_NAMESPACE_QUALIFIER
@@ -189,9 +198,13 @@ namespace testsuite {
 
     struct asCScriptEngineHack : asCScriptEngine 
     {
-        static int GetMessageCallback(asIScriptEngine& asIScriptEngine, asSFuncPtr* callback, void** obj, asDWORD* callConv)
+        virtual int GetMessageCallback(ANGELSCRIPT_NS_QUALIFIER asSFuncPtr* callback, void** obj, ANGELSCRIPT_NS_QUALIFIER asDWORD* callConv)
         {
-            asCScriptEngine& engine = dynamic_cast<asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
+            return asCScriptEngine::GetMessageCallback(callback, obj, callConv);
+        }
+        static int GetMessageCallback(ANGELSCRIPT_NS_QUALIFIER asIScriptEngine& asIScriptEngine, ANGELSCRIPT_NS_QUALIFIER asSFuncPtr* callback, void** obj, ANGELSCRIPT_NS_QUALIFIER asDWORD* callConv)
+        {
+            ANGELSCRIPT_NS_QUALIFIER asCScriptEngine& engine = dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
             bool& msgCallback = engine.msgCallback;
 
             if (!msgCallback)
@@ -224,12 +237,12 @@ namespace testsuite {
                 }
             };
 
-            asSSystemFunctionInterface& msgCallbackFunc = engine.msgCallbackFunc;
+            ANGELSCRIPT_NS_QUALIFIER asSSystemFunctionInterface& msgCallbackFunc = engine.msgCallbackFunc;
             void*& msgCallbackObj = engine.msgCallbackObj;
 
-            asSFuncPtr msgCallbackOriginalFuncPtr = 0;
+            ANGELSCRIPT_NS_QUALIFIER asSFuncPtr msgCallbackOriginalFuncPtr = 0;
             msgCallbackOriginalFuncPtr.ptr.f.func = msgCallbackFunc.func;
-            enum asECallConvTypes msgCallbackOriginalCallConv = lambdas::convert_call_conv(msgCallbackFunc.callConv);
+            ANGELSCRIPT_NS_QUALIFIER asECallConvTypes msgCallbackOriginalCallConv = lambdas::convert_call_conv(msgCallbackFunc.callConv);
 
             if (callback)
                 *callback = msgCallbackOriginalFuncPtr;
@@ -240,15 +253,15 @@ namespace testsuite {
 
             return asSUCCESS;
         }
-        static void UnregisterGlobalFunction(asIScriptEngine& asIScriptEngine, asIScriptFunction* asIScriptFunction)
+        static void UnregisterGlobalFunction(ANGELSCRIPT_NS_QUALIFIER asIScriptEngine& asIScriptEngine, ANGELSCRIPT_NS_QUALIFIER asIScriptFunction* asIScriptFunction)
         {
-            asCScriptFunction* func = &dynamic_cast<asCScriptFunction&>(*asIScriptFunction); // will generate exception with some user provided function class and that's allright
-            asCScriptEngine& engine = dynamic_cast<asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
+            ANGELSCRIPT_NS_QUALIFIER asCScriptFunction* func = &dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptFunction&>(*asIScriptFunction); // will generate exception with some user provided function class and that's allright
+            ANGELSCRIPT_NS_QUALIFIER asCScriptEngine& engine = dynamic_cast<ANGELSCRIPT_NS_QUALIFIER asCScriptEngine&>(asIScriptEngine); // will generate exception with some user provided engine class and that's allright
 
-            const asCArray<unsigned int>& idxs = engine.registeredGlobalFuncs.GetIndexes(func->nameSpace, func->name);
-            for (asUINT n = 0; n < idxs.GetLength(); n++)
+            const ANGELSCRIPT_NS_QUALIFIER asCArray<unsigned int>& idxs = engine.registeredGlobalFuncs.GetIndexes(func->nameSpace, func->name);
+            for (ANGELSCRIPT_NS_QUALIFIER asUINT n = 0; n < idxs.GetLength(); n++)
             {
-                asCScriptFunction* f = engine.registeredGlobalFuncs.Get(idxs[n]);
+                ANGELSCRIPT_NS_QUALIFIER asCScriptFunction* f = engine.registeredGlobalFuncs.Get(idxs[n]);
                 if (f->IsSignatureExceptNameAndReturnTypeEqual(func))
                 {
                     engine.registeredGlobalFuncs.Erase(idxs[n]);
@@ -256,6 +269,7 @@ namespace testsuite {
                 }
             }
         }
+
     };
 } // namespace testsuite
 
@@ -285,7 +299,7 @@ namespace testsuite {
 
 #define SERVICE_INIT_ENGINE_RAII() struct EngineRAII: testsuite::IEngineRAII {                                                                                    \
             EngineRAII(MessageCallback_t MessageCallback = EngineRAII::MessageCallback, void* param = 0)                                                          \
-            : IEngineRAII(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                                        \
+            : testsuite::IEngineRAII(*asCreateScriptEngineFailedAssert()) { DOCTEST_REQUIRE( !operator()(MessageCallback, param) ); }                             \
             MessageCallback_t operator()(MessageCallback_t MessageCallback = 0, void* param = 0) const { using namespace testsuite;                               \
                 asSFuncPtr asSFuncPtr = 0; void* obj; asDWORD callConv; testsuite::asCScriptEngineHack::GetMessageCallback(engine, &asSFuncPtr, &obj, &callConv); \
                 if (MessageCallback) engine.SetMessageCallback(asFUNCTION(MessageCallback), param, asCALL_CDECL);                                                 \

@@ -10,7 +10,6 @@
 #include <cstring>
 #include <fstream>
 
-
 SERVICE_FILE_TRANSLATION_YYMMDD_DATE(TRANSLATION_YYMMDD_DATE);
 SERVICE_FILE_TRANSLATION_HHMMSS_TIME(TRANSLATION_HHMMSS_TIME);
 
@@ -23,16 +22,20 @@ public:
 
     friend bool operator==(
         const my_value_class& lhs, const my_value_class& rhs
-        )
-    {
-        return lhs.value == rhs.value;
-    }
+        );
 
     bool operator<(
         const my_value_class& other
         ) const
     {
         return value < other.value;;
+    }
+
+    bool operator>(
+        const my_value_class& other
+        ) const
+    {
+        return value > other.value;;
     }
 
     int get_val() const { return value; }
@@ -45,12 +48,8 @@ public:
     }
 
     // Operator overloads
-    friend my_value_class operator+(const my_value_class& lhs, int rhs) {
-        return my_value_class(lhs.value + rhs);
-    }
-    friend my_value_class operator+(int lhs, const my_value_class& rhs) {
-        return my_value_class(lhs + rhs.value);
-    }
+    friend my_value_class operator+(const my_value_class& lhs, int rhs);
+    friend my_value_class operator+(int lhs, const my_value_class& rhs);
 
     int value;
     int another_value;
@@ -92,72 +91,164 @@ public:
     }
 };
 
+bool operator==(
+    const my_value_class& lhs, const my_value_class& rhs
+)
+{
+    return lhs.value == rhs.value;
+}
+
+my_value_class operator+(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value + rhs);
+}
+my_value_class operator+(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs + rhs.value);
+}
+
+int operator_compare(
+    const my_value_class& lhs, const my_value_class& rhs
+)
+{
+    if (lhs < rhs) return -1;
+    if (lhs > rhs) return 1;
+    return 0;
+}
 
 TEST_CASE("asdk: reflection type traits")
 {
     namespace type_traits = asdk::reflection::type_traits;
     namespace AngelScript = asdk::AngelScript;
+#   ifndef __BORLANDC__
     {
+        typedef int (my_value_class::*member_function_const)() const;
+        typedef int (my_value_class::*member_function)();
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
-                , int (my_value_class::*)() const
+                  member_function_const
+                , member_function_const
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
-                , int (my_value_class::*)()
+                  member_function_const
+                , member_function
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)() const
+                  member_function_const
                 , int (*)()
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , int (*)()
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , float (*)()
             >::value == bool(false)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)()
+                  member_function
                 , type_traits::arg_type_ph (*)()
             >::value == bool(true)
         ), fail);
+    }
+    {
+        typedef int (my_value_class::* member_function)(float);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)(float)
+                  member_function
                 , type_traits::arg_type_ph (*)(float)
             >::value == bool(true)
         ), fail);
         DOCTEST_STATIC_ASSERT((
             type_traits::is_compatible_function_args<
-                  int (my_value_class::*)(float)
+                  member_function
                 , type_traits::arg_type_ph (*)(type_traits::arg_type_ph)
             >::value == bool(true)
         ), fail);
     }
+#   endif
+    {
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_compatible_function_args<
+                  int (*)()
+                , type_traits::arg_type_ph (*)(type_traits::arg_type_ph)
+            >::value == bool(true)
+        ), fail);
+    }
+
     {
         typedef type_traits::constructor <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
             my_value_class,
             void (*)(asITypeInfo&, my_value_class&), // my_value_class::ctor
-            my_value_class
+            my_value_class,
+            void(*)()
         > constructor_type_traits;
+
+        {
+            typedef int(*is_template_check_type)[constructor_type_traits::isTemplate ? 1 : -1];
+            int is_template_check[constructor_type_traits::isTemplate ? 1 : -1];
+        }
+
+        {
+            typedef constructor_type_traits::ti_reference_storage ti_reference_storage;
+
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>().GetEngine();
+
+            sizeof true ? type_traits::declval<ti_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>();
+        }
+
+        {
+            typedef constructor_type_traits::class_reference_storage class_reference_storage;
+            typedef constructor_type_traits::ti_decl_reference_storage ti_decl_reference_storage;
+
+            sizeof type_traits::declval<class_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>();
+            sizeof type_traits::declval<class_reference_storage::arg1_type>().value;
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>().GetEngine();
+
+            sizeof true ? type_traits::declval<class_reference_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>();
+            sizeof true ? type_traits::declval<ti_decl_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>();
+        }
 
         typedef
         constructor_type_traits::cdecl_objfirst::storage1
         my_value_class_ctor_storage;
+        
+        {
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().value;
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().GetEngine();
+
+            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>();
+            sizeof true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
+                type_traits::declval<asITypeInfo&>();
+
+            sizeof type_traits::declval<constructor_type_traits::type>();
+            sizeof type_traits::declval<constructor_type_traits::type>().value;
+        }
+        
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg2_type, asITypeInfo&>::value
+        ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg1_type, my_value_class&>::value
+        ), fail);
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
@@ -283,23 +374,90 @@ TEST_CASE("asdk: reflection type traits")
                 type_traits::is_same<my_value_class_ctor_storage::arg3_type, float>::value
             ), fail);
         }
-        
+        {
+            sizeof type_traits::declval<constructor_type_traits::type>();
+            sizeof type_traits::declval<constructor_type_traits::type>().value;
+        }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<constructor_type_traits::type, my_value_class>::value
         ), fail);
     }
+#   ifndef __BORLANDC__
     {
+        typedef int (my_value_class::* get_val_type)() const;
         typedef type_traits::function <
             AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
             my_value_class,
-            int (my_value_class::*)() const, // my_value_class::get_val
+            get_val_type, // my_value_class::get_val
+            my_value_class,
+            int(*)()
+        > function_type_traits;
+
+
+        {
+            typedef function_type_traits::class_type class_type;
+
+            sizeof type_traits::declval<class_type>();
+            sizeof type_traits::declval<class_type>().value;
+
+            sizeof true ? type_traits::declval<class_type>() :
+                type_traits::declval<my_value_class&>();
+        }
+
+        typedef
+        function_type_traits::cdecl_or_thiscall::storage1
+        my_value_class_get_val_storage;
+
+        {
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
+        }
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<function_type_traits::type, my_value_class>::value
+        ), fail);
+    }
+    {
+        typedef void (my_value_class::* set_val_type)(int);
+        typedef type_traits::function <
+            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            my_value_class,
+            set_val_type, // my_value_class::set_val
             my_value_class
         > function_type_traits;
 
         typedef
         function_type_traits::cdecl_or_thiscall::storage1
         my_value_class_get_val_storage;
+
+        {
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
+        }
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<function_type_traits::type, my_value_class>::value
+        ), fail);
+    }
+#   endif
+    {
+        typedef type_traits::function <
+            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            my_value_class,
+            bool (*)(const my_value_class&, const my_value_class&), // my_value_class::operator==
+            my_value_class,
+            bool(*)(const my_value_class&)
+        > function_type_traits;
+
+        typedef
+        function_type_traits::cdecl_objfirst::storage1
+        my_value_class_get_val_storage;
+
+        {
+            sizeof type_traits::declval<function_type_traits::type>();
+            sizeof type_traits::declval<function_type_traits::type>().value;
+        }
 
         DOCTEST_STATIC_ASSERT((
             type_traits::is_same<function_type_traits::type, my_value_class>::value
@@ -354,6 +512,18 @@ TEST_CASE("asdk: exposing and reflection")
         REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, "void set_val(int)", asMETHOD(my_value_class, set_val), asCALL_THISCALL)
         );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("bool opEquals(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator==, (const my_value_class&, const my_value_class&), bool), asCALL_CDECL_OBJFIRST)
+        );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, std::string("int opCmp(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator_compare, (const my_value_class&, const my_value_class&), int), asCALL_CDECL_OBJFIRST)
+        );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opAdd(const ") + my_value_class_tmpl_cstr + " & in) const"
+                , asFUNCTIONPR(operator+, (const my_value_class&, int), my_value_class), asCALL_CDECL_OBJFIRST)
+        );
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
 
@@ -374,9 +544,10 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal()
-            //.operator<()(&my_value_class::operator<)
-            //.operator+<my_value_class, int>()
+            //.operator_assign()
+            .operator_equal_to<my_value_class>("const my_value_class<T> & in")
+            .operator_compare()
+            .operator+<int>("int")
             //.operator+<int, my_value_class>()
             ;
 
@@ -398,9 +569,9 @@ TEST_CASE("asdk: exposing and reflection")
             .destructor()
             .function("int get_val() const", &my_value_class::get_val)
             .function("void set_val(int)", &my_value_class::set_val)
-            .operator_equal()
-            //.operator<()(&my_value_class::operator<)
-            //.operator+<my_value_class, int>()
+            .operator_equal_to()
+            .operator_compare<my_value_class>("const my_value_class & in")
+            .operator_add<int, my_value_class>("int")
             //.operator+<int, my_value_class>()
             ;
 
