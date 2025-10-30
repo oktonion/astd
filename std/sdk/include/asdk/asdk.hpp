@@ -1249,7 +1249,7 @@ namespace asdk {
             template<class OtherT, class ThisT>
             reflect&
             operator_add(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG((*(const OtherT*)(0)) + (*(const ThisT*)(0))))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(((*(const OtherT*)(0)) + (*(const ThisT*)(0)))))
             {
                 return operator_add(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), other_str);
             }
