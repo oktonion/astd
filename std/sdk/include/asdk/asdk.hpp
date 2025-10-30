@@ -297,7 +297,16 @@ namespace asdk {
             struct conditional<IfTrueT, IfFalseT, false> { typedef IfFalseT type; };
 
             template<class T>
-            T declval();
+            struct remove_reference { typedef T type; };
+            template<class T>
+            struct remove_reference<T&> { typedef T type; };
+            template<class T>
+            struct remove_reference<const T&> { typedef const T type; };
+            template<class T>
+            struct remove_reference<volatile T&> { typedef volatile T type; };
+
+            template<class T>
+            T declval() { throw(""); return *reinterpret_cast<typename remove_reference<T>::type*>(0); }
 
             template<int> struct sfinae_size_check {};
 
@@ -904,7 +913,7 @@ namespace asdk {
             template<class Arg1T>
             reflect&
             constructor(const std::string& arg1_str
-                , int(*)[sizeof(T(type_traits::declval<Arg1T>())) == sizeof(T)] = 0) {
+                , int(*)[sizeof T(type_traits::declval<Arg1T>()) == sizeof(T)] = 0) {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T),
                     void(*)(T&, Arg1T),
@@ -935,7 +944,7 @@ namespace asdk {
             template<class Arg1T, class Arg2T>
             reflect&
             constructor(const std::string& arg1_str, const std::string& arg2_str
-                , int(*)[sizeof(T(type_traits::declval<Arg1T>(), type_traits::declval<Arg2T>())) == sizeof(T)] = 0) {
+                , int(*)[sizeof T(type_traits::declval<Arg1T>(), type_traits::declval<Arg2T>()) == sizeof(T)] = 0) {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T, Arg2T),
                     void(*)(T&, Arg1T, Arg2T),
@@ -1027,7 +1036,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_assign(const std::string& other_str
-                , int(*)[sizeof((*(const T*)(0)) = (*(const OtherT*)(0)))] = 0)
+                , int(*)[sizeof((*(T*)(0)) = (*(const OtherT*)(0)))] = 0)
             {
                 return operator_assign<T, OtherT>(other_str, name, static_cast<T(*)(T&, const OtherT&)>(opAssign));
             }
@@ -1124,9 +1133,9 @@ namespace asdk {
             operator_compare(const std::string &other_str
                 , int(*)
                 [
-                    sizeof((*(const T*)(0)) < (*(const OtherT*)(0)))
+                    sizeof ((*(const T*)(0)) < (*(const OtherT*)(0)))
                     +
-                    sizeof((*(const T*)(0)) > (*(const OtherT*)(0)))
+                    sizeof ((*(const T*)(0)) > (*(const OtherT*)(0)))
                 ] = 0)
             {
                 return operator_compare(static_cast<int(*)(const T&, const OtherT&)>(opCmp), other_str);
@@ -1356,19 +1365,24 @@ namespace asdk {
         private:
             using underlying_type::asIScriptEngine;
             using underlying_type::name;
-            template<class FuncT>
-            static typename type_traits::template_callback<FuncT, underlying_type&>::type
-            template_callback_tester(FuncT func);
-            static char
-            template_callback_result_tester(const underlying_type&);
-            static int
-            template_callback_result_tester(const type_traits::arg_type_ph&);
+            struct reflect_helper
+            {
+                template<class FuncT>
+                static typename type_traits::template_callback<FuncT, underlying_type&>::type
+                template_callback_tester(FuncT func);
+                template<class UnderlyingT>
+                static char
+                template_callback_result_tester(const UnderlyingT&);
+                template<class UnderlyingT>
+                static int
+                template_callback_result_tester(const type_traits::arg_type_ph&);
+            };
 
             static const bool helper_type_value = sizeof(
-                template_callback_result_tester(
-                    template_callback_tester(T::template_callback)
+                reflect_helper::template_callback_result_tester< underlying_type>(
+                    reflect_helper::template_callback_tester(T::template_callback)
                 )
-                ) == sizeof(char);
+            ) == sizeof(char);
             typedef
             typename type_traits::conditional<
                 underlying_type&, type_traits::arg_type_ph,
