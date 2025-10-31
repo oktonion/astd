@@ -1476,7 +1476,7 @@ namespace astd {
 
                             static bool register_behaviours(asIScriptEngine& engine,
                                 const namespace_cstr& ns_name,
-                                const type_cstr& func_name = static_cast<type_cstr>(meta::func_cstr()),
+                                const type_cstr& func_name = static_cast<type_cstr>(duration_cast::meta::func_cstr()),
                                 const subtype_cstr& subtype_name = static_cast<subtype_cstr>("T")
                             )
                             {
