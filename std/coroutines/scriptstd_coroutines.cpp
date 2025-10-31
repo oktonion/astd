@@ -160,16 +160,16 @@ namespace astd {
             void* objectRegister;
             asITypeInfo* objectRegisterType;
         } state_reg[stack_size];
-
+        struct var {
+            const char* name;
+            int typeId;
+            asETypeModifiers typeModifiers;
+            bool isVarOnHeap;
+            int stackOffset;
+            void* address;
+        };
         struct {
-            struct var {
-                const char* name; 
-                int typeId; 
-                asETypeModifiers typeModifiers; 
-                bool isVarOnHeap; 
-                int stackOffset;
-                void* address;
-            };
+
             std::map<int, var> info;
             int count() const { return static_cast<int>(info.size()); }
             const var& operator[](std::size_t i) const { return info.at(i); }
