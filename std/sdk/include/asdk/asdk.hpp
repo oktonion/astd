@@ -1169,7 +1169,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_equal_to(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (*(T*)(0)) == (*(OtherT*)(0)) )))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (*static_cast<T*>((T*)(0))) == (*static_cast<T*>((OtherT*)(0))) )))
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
             }
