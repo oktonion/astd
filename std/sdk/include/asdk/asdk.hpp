@@ -1169,7 +1169,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_equal_to(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (static_cast<T&>(*(T*)(0))) == (static_cast<T&>(*(OtherT*)(0))) )))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (static_cast<T>(*(T*)(0))) == (static_cast<T>(*(OtherT*)(0))) )))
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
             }
@@ -1347,7 +1347,6 @@ namespace asdk {
                 const bool is_enum = (0 != (flags & asOBJ_ENUM));
                 const bool is_union = (0 != (flags & asOBJ_APP_CLASS_UNION));
                 const bool is_template = (0 != (flags & asOBJ_TEMPLATE));
-                const bool is_template = (0 != (flags & asOBJ_TEMPLATE));
                 const bool is_all_ints = (0 != (flags & asOBJ_APP_CLASS_ALLINTS));
                 const bool is_all_floats = (0 != (flags & asOBJ_APP_CLASS_ALLFLOATS));
 
@@ -1474,7 +1473,7 @@ namespace asdk {
                 , bool has_custom_copy_constructor
             ) {
                 object_traits result;
-                const asDWORD flags = ObjType;
+                const asDWORD flags = ObjTypeT |ObjFlag1 | ObjFlag2 | ObjFlag3;
 
                 result.has.default_constructor = has_default_constructor;
                 result.has.custom_destructor = has_custom_destructor;
