@@ -44,3 +44,4 @@ out/*
 std/out/*
 CMakeSettings.json
 *.exp
+*.exp
