@@ -1169,7 +1169,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_equal_to(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (static_cast<T>(*(T*)(0))) == (static_cast<T>(*(OtherT*)(0))) )))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (static_cast<T>(*(T*)(0))) == (static_cast<OtherT>(*(OtherT*)(0))) )))
             {
                 return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
             }
@@ -1222,9 +1222,9 @@ namespace asdk {
             operator_compare(const std::string &other_str
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG
                 (
-                    sizeof ((*(T*)(0)) < (*(OtherT*)(0)))
+                    sizeof (static_cast<T>(*(T*)(0)) < static_cast<OtherT>(*(OtherT*)(0)))
                     +
-                    sizeof ((*(T*)(0)) > (*(OtherT*)(0)))
+                    sizeof (static_cast<T>(*(T*)(0)) > static_cast<OtherT>(*(OtherT*)(0)))
                 ))
             {
                 return operator_compare(static_cast<int(*)(const T&, const OtherT&)>(opCmp), other_str);
@@ -1278,7 +1278,7 @@ namespace asdk {
             template<class OtherT>
             reflect&
             operator_add(const std::string &other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof((*(T*)(0)) + (*(OtherT*)(0))) ))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof(static_cast<T>(*(T*)(0)) + static_cast<OtherT>(*(OtherT*)(0))) ))
             {
                 return operator_add(static_cast<T(*)(const T&, OtherT)>(opAdd), other_str);
             }
@@ -1291,7 +1291,7 @@ namespace asdk {
 
             template<class OtherT>
             typename type_traits::conditional<reflect&, type_traits::arg_type_ph
-                , sizeof((*(const T*)(0)) + (*(const OtherT*)(0))) == sizeof(T)>::type
+                , sizeof(static_cast<T>(*(T*)(0)) + static_cast<OtherT>(*(OtherT*)(0))) == sizeof(T)>::type
             operator+(const std::string &other_str)
             {
                 return operator_add<OtherT>(other_str);
@@ -1328,7 +1328,7 @@ namespace asdk {
             template<class OtherT, class ThisT>
             reflect&
             operator_add(const std::string& other_str
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(((*(OtherT*)(0)) + (*(ThisT*)(0)))))
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG((static_cast<OtherT>(*(OtherT*)(0)) + static_cast<ThisT>(*(ThisT*)(0)))))
             {
                 return operator_add<T, const OtherT&, const ThisT&>(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), name, other_str);
             }
