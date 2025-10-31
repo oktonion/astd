@@ -1266,7 +1266,7 @@ namespace asdk {
             operator_add(FuncT func
                 , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, T(*)(type_traits::arg_type_ph)>::type other_str)
             {
-                return operator_add<type_traits::arg_type_ph, FuncT>(func, other_str);
+                return operator_add<T, type_traits::arg_type_ph, FuncT>(func, name, other_str);
             }
 
             reflect&
@@ -1577,14 +1577,13 @@ namespace asdk {
                 static int
                 template_callback_result_tester(const type_traits::arg_type_ph&);
             };
-            typedef char(&sizeof_array1)[
-                sizeof(
+            enum {sizeof_array = sizeof(
                 reflect_helper::template template_callback_result_tester< underlying_type>(
                     reflect_helper::template_callback_tester(T::template_callback)
                     ))
-            ];
+            };
             typedef type_traits::size_is_equal< 
-                sizeof(sizeof_array1), sizeof(char)
+                sizeof_array, sizeof(char)
             > size_is_equal;
             typedef
             typename type_traits::conditional<
