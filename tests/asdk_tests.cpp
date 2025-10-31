@@ -194,8 +194,8 @@ TEST_CASE("asdk: reflection type traits")
         > constructor_type_traits;
 
         {
-            typedef int(*is_template_check_type)[constructor_type_traits::isTemplate ? 1 : -1];
-            int is_template_check[constructor_type_traits::isTemplate ? 1 : -1];
+            typedef int(*is_template_check_type)[constructor_type_traits::IsTemplate ? 1 : -1];
+            int is_template_check[constructor_type_traits::IsTemplate ? 1 : -1];
         }
 
         {
@@ -576,7 +576,7 @@ TEST_CASE("asdk: exposing and reflection")
 
     SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
-        typedef asdk::reflect<my_value_class, asdk::AngelScript::asEObjTypeFlags::type(asOBJ_TEMPLATE| asOBJ_APP_CLASS_ALLINTS)> reflect;
+        typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE, asOBJ_APP_CLASS_ALLINTS> reflect;
         reflect(my_value_class_tmpl_cstr, asIScriptEngine, true, false, false, false)
             .template_callback()
             .constructor()
