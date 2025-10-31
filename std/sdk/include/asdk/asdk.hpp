@@ -1342,11 +1342,14 @@ namespace asdk {
             {
                 using namespace AngelScript;
 
-                asDWORD flags;
-                const bool is_pod = (0 != (asDWORD(ObjType) & asOBJ_POD));
-                const bool is_enum = (0 != (asDWORD(ObjType) & asOBJ_ENUM));
-                const bool is_union = (0 != (asDWORD(ObjType) & asOBJ_APP_CLASS_UNION));
-                const bool is_template = (0 != (asDWORD(ObjType) & asOBJ_TEMPLATE));
+                asDWORD flags = ObjTypeT | ObjFlag1 | ObjFlag2 | ObjFlag3;
+                const bool is_pod = (0 != (flags & asOBJ_POD));
+                const bool is_enum = (0 != (flags & asOBJ_ENUM));
+                const bool is_union = (0 != (flags & asOBJ_APP_CLASS_UNION));
+                const bool is_template = (0 != (flags & asOBJ_TEMPLATE));
+                const bool is_template = (0 != (flags & asOBJ_TEMPLATE));
+                const bool is_all_ints = (0 != (flags & asOBJ_APP_CLASS_ALLINTS));
+                const bool is_all_floats = (0 != (flags & asOBJ_APP_CLASS_ALLFLOATS));
 
                 if (object_traits.is.floating_point)
                     flags = asOBJ_APP_FLOAT;
@@ -1364,6 +1367,10 @@ namespace asdk {
                         flags |= asOBJ_APP_CLASS_ASSIGNMENT;
                     if (object_traits.has.custom_copy_constructor)
                         flags |= asOBJ_APP_CLASS_COPY_CONSTRUCTOR;
+                    if (is_all_ints)
+                        flags |= asOBJ_APP_CLASS_ALLINTS;
+                    if (is_all_floats)
+                        flags |= asOBJ_APP_CLASS_ALLFLOATS;
                 }
 
                 if (object_traits.is.c_array)
