@@ -20,6 +20,13 @@ public:
 
     explicit my_value_class(int val) : value(val), another_value(val-1) {}
 
+    my_value_class& operator=(const my_value_class& other)
+    {
+        value = other.value;
+        another_value = other.another_value;
+        return *this;
+    }
+
     friend bool operator==(
         const my_value_class& lhs, const my_value_class& rhs
         );
