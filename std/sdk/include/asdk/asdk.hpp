@@ -606,29 +606,45 @@ namespace asdk {
 
         // constructor
         namespace type_traits {
-            template<AngelScript::asEObjTypeFlags::type ObjType, class ClassT, class FuncT, class ReflectionT
+
+            template<int ObjTypeT = 0
+                , int ObjFlag1 = 0
+                , int ObjFlag2 = 0
+                , int ObjFlag3 = 0
+            >
+            struct reflect_flags{
+                static const bool is_template =
+                    (ObjTypeT & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                        (ObjFlag1 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                            (ObjFlag2 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                                (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                                    false))))
+                    ;
+
+                static const AngelScript::asEObjTypeFlags::type object_type = AngelScript::asEObjTypeFlags::type(ObjTypeT);
+            };
+
+            template<class Flags, class ClassT, class FuncT, class ReflectionT
                 , class DeclT = void(*)(arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph)>
             struct constructor {
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
-
-                static const bool IsTemplate =
-                    (ObjType & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : false;
+                typedef Flags flags;
 
                 typedef
                 typename
                 conditional<
                     function_traits_storage<void, void>,
                     function_traits_storage<void, void, asITypeInfo&>,
-                    constructor::IsTemplate == bool(false)
+                    flags::is_template == bool(false)
                 >::type ti_reference_storage;
                 typedef
                 typename
                 conditional<
                     function_traits_storage<void, void>,
                     function_traits_storage<void, void, asITypeInfo*>,
-                    constructor::IsTemplate == bool(false)
+                    flags::is_template == bool(false)
                 >::type ti_pointer_storage;
                 typedef function_traits_storage<void, void, ClassT&>   class_reference_storage;
                 typedef function_traits_storage<void, void, ClassT*>     class_pointer_storage;
@@ -719,6 +735,11 @@ namespace asdk {
                 typedef typename arg_last<func_traits_type>::type argN_type;
 
             };
+
+            template<class Flags, class ClassT, class FuncT, class ReflectionT, class DeclT>
+            struct constructor<Flags, ClassT, FuncT&, ReflectionT, DeclT>
+                : constructor<Flags, ClassT, FuncT*, ReflectionT, DeclT>
+            { };
         }
 
         // function
@@ -738,7 +759,7 @@ namespace asdk {
                 }
             };
 
-            template<AngelScript::asEObjTypeFlags::type, class ClassT, class FuncT, class ReflectionT
+            template<class Flags, class ClassT, class FuncT, class ReflectionT
                 , class DeclT = arg_type_ph(*)(arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph)>
             struct function {
 
@@ -894,20 +915,16 @@ namespace asdk {
             } is;
         };
 
+
+
         template<class T, AngelScript::asEObjTypeFlags::type ObjTypeT
-            , AngelScript::asEObjTypeFlags::type ObjFlag1 = AngelScript::asEObjTypeFlags::type(0)
-            , AngelScript::asEObjTypeFlags::type ObjFlag2 = AngelScript::asEObjTypeFlags::type(0)
-            , AngelScript::asEObjTypeFlags::type ObjFlag3 = AngelScript::asEObjTypeFlags::type(0)
+            , AngelScript::asEObjTypeFlags::type ObjFlag1 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag2 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag3 = type_traits::reflect_flags<>::object_type
         >
         struct reflect
         {
-            static const bool IsTemplate = 
-                (ObjTypeT & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true :(
-                (ObjFlag1 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true :(
-                (ObjFlag2 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true :(
-                (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true :(
-                false))));
-            static const AngelScript::asEObjTypeFlags::type ObjType = reflect::IsTemplate ? AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE : ObjTypeT;
+            typedef type_traits::reflect_flags<ObjTypeT, ObjFlag1, ObjFlag2, ObjFlag3> flags;
 
             typedef AngelScript::asITypeInfo asITypeInfo;
             typedef AngelScript::asECallConvTypes::type asECallConvTypes;
@@ -941,11 +958,11 @@ namespace asdk {
             }
 
             template<class FuncT>
-            typename type_traits::constructor<reflect::ObjType, T, FuncT, reflect&, void(*)()>::type
+            typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)()>::type
             constructor(FuncT func) {
-                const char* ctor_cstr = IsTemplate ? "void ctor(int&in)" : "void ctor()";
+                const char* ctor_cstr = flags::is_template ? "void ctor(int&in)" : "void ctor()";
 
-                typedef type_traits::constructor<reflect::ObjType, T, FuncT, reflect&, void(*)()> ctor_traits;
+                typedef type_traits::constructor<flags, T, FuncT, reflect&, void(*)()> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -965,17 +982,17 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&),
                     void(*)(T&),
-                    reflect::IsTemplate == bool(true)
+                    reflect::flags::is_template == bool(true)
                 >::type FuncT;
                 return constructor(static_cast<FuncT>(&ctor));
             }
 
             template<class Arg1T, class FuncT>
-            typename type_traits::constructor<reflect::ObjType, T, FuncT, reflect&, void(*)(Arg1T)>::type
+            typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T)>::type
             constructor(const std::string& arg1_str, FuncT func) {
-                const std::string ctor_str = (IsTemplate ? "void ctor(int&in, " : "void ctor(") + format_function_argument<Arg1T>(arg1_str) + ")";
+                const std::string ctor_str = (flags::is_template ? "void ctor(int&in, " : "void ctor(") + format_function_argument<Arg1T>(arg1_str) + ")";
 
-                typedef type_traits::constructor<reflect::ObjType, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
+                typedef type_traits::constructor<flags, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -996,21 +1013,21 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T),
                     void(*)(T&, Arg1T),
-                    IsTemplate == bool(true)
+                    flags::is_template == bool(true)
                 >::type FuncT;
                 return constructor<Arg1T>(arg1_str, static_cast<FuncT>(&ctor));
             }
 
             template<class Arg1T, class Arg2T, class FuncT>
-            typename type_traits::constructor<reflect::ObjType, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
+            typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
             constructor(const std::string& arg1_str, const std::string& arg2_str, FuncT func) {
-                const std::string ctor_str = (IsTemplate ? "void ctor(int&in, " : "void ctor(") 
+                const std::string ctor_str = (flags::is_template ? "void ctor(int&in, " : "void ctor(") 
                     + format_function_argument<Arg1T>(arg1_str) 
                     + ", " 
                     + format_function_argument<Arg1T>(arg2_str) 
                     + ")";
 
-                typedef type_traits::constructor<reflect::ObjType, T, FuncT, reflect, void(*)(Arg1T, Arg2T)> ctor_traits;
+                typedef type_traits::constructor<flags, T, FuncT, reflect, void(*)(Arg1T, Arg2T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -1031,15 +1048,15 @@ namespace asdk {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&, Arg1T, Arg2T),
                     void(*)(T&, Arg1T, Arg2T),
-                    reflect::IsTemplate == bool(true)
+                    reflect::flags::is_template == bool(true)
                 >::type FuncT;
                 return constructor<Arg1T>(arg1_str, arg2_str, static_cast<FuncT>(&ctor));
             }
 
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&>::type
-            function(typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&>::type func_str, FuncT func) {
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&> func_traits;
+            typename type_traits::function<flags, T, FuncT, reflect&>::type
+            function(typename type_traits::function<flags, T, FuncT, const std::string&>::type func_str, FuncT func) {
+                typedef type_traits::function<flags, T, FuncT, reflect&> func_traits;
                 typedef typename func_traits::obj_type obj_type;
                 typedef typename func_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
@@ -1056,9 +1073,9 @@ namespace asdk {
             }
 
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, void(*)()>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, void(*)()>::type
             destructor(FuncT func) {
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, void(*)()> func_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, void(*)()> func_traits;
                 typedef typename func_traits::obj_type obj_type;
                 typedef typename func_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
@@ -1079,14 +1096,14 @@ namespace asdk {
             }
 
             template<class OtherT, class ReturnT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
-            operator_assign(typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
+            typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
+            operator_assign(typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , FuncT func)
             {
                 const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + ")";
             
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -1102,15 +1119,15 @@ namespace asdk {
             }
 
             template<class OtherT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, T(*)(OtherT)>::type
-            operator_assign(typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, T(*)(OtherT)>::type other_str
+            typename type_traits::function<flags, T, FuncT, reflect&, T(*)(OtherT)>::type
+            operator_assign(typename type_traits::function<flags, T, FuncT, const std::string&, T(*)(OtherT)>::type other_str
                 , FuncT func)
             {
                 return operator_assign<OtherT, T, FuncT>(other_str, name, func);
             }
 
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, T(*)(const T&)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, T(*)(const T&)>::type
             operator_assign(FuncT func)
             {
                 return operator_assign<const T&>(name, func);
@@ -1131,13 +1148,13 @@ namespace asdk {
             }
             
             template<class OtherT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, bool(*)(OtherT)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, bool(*)(OtherT)>::type
             operator_equal_to(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, bool(*)(OtherT)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, bool(*)(OtherT)>::type other_str)
             {
                 const std::string op_str = "bool opEquals(" + format_function_argument<OtherT>(other_str) + ") const";
             
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, bool(*)(OtherT)> op_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, bool(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -1153,9 +1170,9 @@ namespace asdk {
             }
             
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, bool(*)(type_traits::arg_type_ph)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, bool(*)(type_traits::arg_type_ph)>::type
             operator_equal_to(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, bool(*)(type_traits::arg_type_ph)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, bool(*)(type_traits::arg_type_ph)>::type other_str)
             {
                 return operator_equal_to<type_traits::arg_type_ph, FuncT>(func, other_str);
             }
@@ -1182,13 +1199,13 @@ namespace asdk {
             }
 
             template<class OtherT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, int(*)(OtherT)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, int(*)(OtherT)>::type
             operator_compare(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, int(*)(OtherT)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, int(*)(OtherT)>::type other_str)
             {
                 const std::string op_str = "int opCmp(" + format_function_argument<OtherT>(other_str) + ") const";
             
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, int(*)(OtherT)> op_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, int(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -1204,9 +1221,9 @@ namespace asdk {
             }
             
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, int(*)(type_traits::arg_type_ph)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, int(*)(type_traits::arg_type_ph)>::type
             operator_compare(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, int(*)(type_traits::arg_type_ph)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, int(*)(type_traits::arg_type_ph)>::type other_str)
             {
                 return operator_compare<type_traits::arg_type_ph, FuncT>(func, other_str);
             }
@@ -1231,14 +1248,14 @@ namespace asdk {
             }
 
             template<class ReturnT, class OtherT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
             operator_add(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str)
             {
                 const std::string op_str = return_str + " opAdd(" + format_function_argument<OtherT>(other_str) + ") const";
             
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL =
@@ -1254,17 +1271,17 @@ namespace asdk {
             }
 
             template<class OtherT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, T(*)(OtherT)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, T(*)(OtherT)>::type
             operator_add(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, T(*)(OtherT)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, T(*)(OtherT)>::type other_str)
             {
                 return operator_add<T, OtherT, FuncT>(func, name, other_str);
             }
 
             template<class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, T(*)(type_traits::arg_type_ph)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, T(*)(type_traits::arg_type_ph)>::type
             operator_add(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, T(*)(type_traits::arg_type_ph)>::type other_str)
+                , typename type_traits::function<flags, T, FuncT, const std::string&, T(*)(type_traits::arg_type_ph)>::type other_str)
             {
                 return operator_add<T, type_traits::arg_type_ph, FuncT>(func, name, other_str);
             }
@@ -1291,24 +1308,24 @@ namespace asdk {
 
             template<class OtherT>
             typename type_traits::conditional<reflect&, type_traits::arg_type_ph
-                , sizeof(static_cast<T>(*(T*)(0)) + static_cast<OtherT>(*(OtherT*)(0))) == sizeof(T)>::type
+                , sizeof((*(T*)(0)) + (*(OtherT*)(0))) == sizeof(T)>::type
             operator+(const std::string &other_str)
             {
                 return operator_add<OtherT>(other_str);
             }
 
             template<class ReturnT, class OtherT, class ThisT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
             operator_add(FuncT func
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , typename type_traits::conditional<const std::string&, void,
-                    sizeof (typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::
+                    sizeof (typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::
                         is_compatible_with_cdecl_objlast) == sizeof (type_traits::true_type)
                 >::type other_str)
             {
                 const std::string op_str = return_str + " opAdd_r(" + format_function_argument<OtherT>(other_str) + ") const";
             
-                typedef type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
+                typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
                 const asECallConvTypes asCALL = asCALL_CDECL_OBJLAST;
@@ -1318,9 +1335,9 @@ namespace asdk {
             }
 
             template<class ReturnT, class OtherT, class ThisT, class FuncT>
-            typename type_traits::function<reflect::ObjType, T, FuncT, reflect&, ReturnT(*)(OtherT, ThisT)>::type
-            operator_add(typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type return_str
-                , typename type_traits::function<reflect::ObjType, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type other_str)
+            typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT, ThisT)>::type
+            operator_add(typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type return_str
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type other_str)
             {
                 return operator_add(static_cast<ReturnT(*)(const OtherT&, const ThisT&)>(opAdd), return_str, other_str);
             }
@@ -1526,8 +1543,9 @@ namespace asdk {
         template<class T
             , AngelScript::asEObjTypeFlags::type ObjFlag1
             , AngelScript::asEObjTypeFlags::type ObjFlag2
+            , AngelScript::asEObjTypeFlags::type ObjFlag3
         >
-        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::type(0)>
+        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, ObjFlag3>
             : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;

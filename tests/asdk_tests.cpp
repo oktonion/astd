@@ -20,6 +20,13 @@ public:
 
     explicit my_value_class(int val) : value(val), another_value(val-1) {}
 
+    my_value_class& operator=(const my_value_class& other)
+    {
+        value = other.value;
+        another_value = other.another_value;
+        return *this;
+    }
+
     friend bool operator==(
         const my_value_class& lhs, const my_value_class& rhs
         );
@@ -186,16 +193,16 @@ TEST_CASE("asdk: reflection type traits")
 
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
-            void (*)(asITypeInfo&, my_value_class&), // my_value_class::ctor
+            void (*)(asITypeInfo&, my_value_class&), // my_value_class::ctor_tmpl
             my_value_class,
             void(*)()
         > constructor_type_traits;
 
         {
-            typedef int(*is_template_check_type)[constructor_type_traits::IsTemplate ? 1 : -1];
-            int is_template_check[constructor_type_traits::IsTemplate ? 1 : -1];
+            typedef int(*is_template_check_type)[constructor_type_traits::flags::is_template ? 1 : -1];
+            int is_template_check[constructor_type_traits::flags::is_template ? 1 : -1];
         }
 
         {
@@ -223,19 +230,27 @@ TEST_CASE("asdk: reflection type traits")
                 type_traits::declval<asITypeInfo&>());
         }
 
+        
+        DOCTEST_STATIC_ASSERT((
+            constructor_type_traits::is_compatible_with_cdecl_objfirst::value == bool(false)
+        ), fail);
+        DOCTEST_STATIC_ASSERT((
+            constructor_type_traits::is_compatible_with_cdecl_objlast::value == bool(true)
+        ), fail);
+
         typedef
-        constructor_type_traits::cdecl_objfirst::storage1
+        constructor_type_traits::cdecl_objlast::storage1
         my_value_class_ctor_storage;
         
         {
-            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>();
             sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>();
-            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().value;
-            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().GetEngine();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().value;
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().GetEngine();
 
-            sizeof (true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
-                type_traits::declval<my_value_class&>());
             sizeof (true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
+                type_traits::declval<my_value_class&>());
+            sizeof (true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
                 type_traits::declval<asITypeInfo&>());
 
             sizeof type_traits::declval<constructor_type_traits::type>();
@@ -243,11 +258,11 @@ TEST_CASE("asdk: reflection type traits")
         }
         
         DOCTEST_STATIC_ASSERT((
-            type_traits::is_same<my_value_class_ctor_storage::arg2_type, asITypeInfo&>::value
+            type_traits::is_same<my_value_class_ctor_storage::arg1_type, asITypeInfo&>::value
         ), fail);
 
         DOCTEST_STATIC_ASSERT((
-            type_traits::is_same<my_value_class_ctor_storage::arg1_type, my_value_class&>::value
+            type_traits::is_same<my_value_class_ctor_storage::arg2_type, my_value_class&>::value
         ), fail);
 
         DOCTEST_STATIC_ASSERT((
@@ -256,7 +271,84 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
+            my_value_class,
+            void (*)(my_value_class&, asITypeInfo&), // my_value_class::ctor_tmpl
+            my_value_class,
+            void(*)()
+        > constructor_type_traits;
+
+        {
+            typedef int(*is_template_check_type)[constructor_type_traits::flags::is_template ? 1 : -1];
+            int is_template_check[constructor_type_traits::flags::is_template ? 1 : -1];
+        }
+
+        {
+            typedef constructor_type_traits::ti_reference_storage ti_reference_storage;
+
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_reference_storage::arg1_type>().GetEngine();
+
+            sizeof(true ? type_traits::declval<ti_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>());
+        }
+
+        {
+            typedef constructor_type_traits::class_reference_storage class_reference_storage;
+            typedef constructor_type_traits::ti_decl_reference_storage ti_decl_reference_storage;
+
+            sizeof type_traits::declval<class_reference_storage::arg1_type>();
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>();
+            sizeof type_traits::declval<class_reference_storage::arg1_type>().value;
+            sizeof type_traits::declval<ti_decl_reference_storage::arg1_type>().GetEngine();
+
+            sizeof(true ? type_traits::declval<class_reference_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>());
+            sizeof(true ? type_traits::declval<ti_decl_reference_storage::arg1_type>() :
+                type_traits::declval<asITypeInfo&>());
+        }
+
+        DOCTEST_STATIC_ASSERT((
+            constructor_type_traits::is_compatible_with_cdecl_objfirst::value == bool(true)
+        ), fail);
+        DOCTEST_STATIC_ASSERT((
+            constructor_type_traits::is_compatible_with_cdecl_objlast::value == bool(false)
+        ), fail);
+
+        typedef
+        constructor_type_traits::cdecl_objfirst::storage1
+            my_value_class_ctor_storage;
+
+        {
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>();
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg1_type>().value;
+            sizeof type_traits::declval<my_value_class_ctor_storage::arg2_type>().GetEngine();
+
+            sizeof(true ? type_traits::declval<my_value_class_ctor_storage::arg1_type>() :
+                type_traits::declval<my_value_class&>());
+            sizeof(true ? type_traits::declval<my_value_class_ctor_storage::arg2_type>() :
+                type_traits::declval<asITypeInfo&>());
+
+            sizeof type_traits::declval<constructor_type_traits::type>();
+            sizeof type_traits::declval<constructor_type_traits::type>().value;
+        }
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg2_type, asITypeInfo&>::value
+            ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<my_value_class_ctor_storage::arg1_type, my_value_class&>::value
+            ), fail);
+
+        DOCTEST_STATIC_ASSERT((
+            type_traits::is_same<constructor_type_traits::type, my_value_class>::value
+            ), fail);
+    }
+    {
+        typedef type_traits::constructor <
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             void (*)(asITypeInfo&, float, my_value_class&), // my_value_class::ctor_float - objlast
             my_value_class,
@@ -319,7 +411,7 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             void (*)(my_value_class&, asITypeInfo&, float), // my_value_class::ctor_float - objfirst
             my_value_class,
@@ -387,7 +479,7 @@ TEST_CASE("asdk: reflection type traits")
     {
         typedef int (my_value_class::* get_val_type)() const;
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             get_val_type, // my_value_class::get_val
             my_value_class,
@@ -421,7 +513,7 @@ TEST_CASE("asdk: reflection type traits")
     {
         typedef void (my_value_class::* set_val_type)(int);
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             set_val_type, // my_value_class::set_val
             my_value_class
@@ -443,7 +535,7 @@ TEST_CASE("asdk: reflection type traits")
 #   endif
     {
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             bool (*)(const my_value_class&, const my_value_class&), // my_value_class::operator==
             my_value_class,
@@ -473,7 +565,7 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS>,
             my_value_class,
             my_value_class(*)(int, const my_value_class&), // opAdd_r
             my_value_class,
@@ -577,6 +669,27 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE, asOBJ_APP_CLASS_ALLINTS> reflect;
+        {
+            int is_template[reflect::flags::is_template ? 1 : -1];
+            typedef 
+            asdk::type_traits::constructor<
+                  reflect::flags
+                , my_value_class
+                , void (&)(my_value_class&, asITypeInfo&)
+                , int
+                , void(*)()
+            > constructor_traits;
+
+            int is_template_traits[constructor_traits::flags::is_template ? 1 : -1];
+            constructor_traits::type constructor_traits_type;
+
+            int ctor_tmpl_is_constructor[sizeof(constructor_traits::type)];
+
+            DOCTEST_STATIC_ASSERT((
+                asdk::type_traits::is_same<constructor_traits::type, int>::value
+            ), fail);
+        }
+
         reflect(my_value_class_tmpl_cstr, asIScriptEngine, true, false, false, false)
             .template_callback()
             .constructor()
