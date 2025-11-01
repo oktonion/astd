@@ -620,6 +620,8 @@ namespace asdk {
                                 (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
                                     false))))
                     ;
+
+                static const AngelScript::asEObjTypeFlags::type object_type = AngelScript::asEObjTypeFlags::type(ObjTypeT);
             };
 
             template<class Flags, class ClassT, class FuncT, class ReflectionT
@@ -911,9 +913,9 @@ namespace asdk {
 
 
         template<class T, AngelScript::asEObjTypeFlags::type ObjTypeT
-            , AngelScript::asEObjTypeFlags::type ObjFlag1 = AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS_ALIGN8
-            , AngelScript::asEObjTypeFlags::type ObjFlag2 = AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS_ALIGN8
-            , AngelScript::asEObjTypeFlags::type ObjFlag3 = AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS_ALIGN8
+            , AngelScript::asEObjTypeFlags::type ObjFlag1 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag2 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag3 = type_traits::reflect_flags<>::object_type
         >
         struct reflect
         {
@@ -1536,8 +1538,9 @@ namespace asdk {
         template<class T
             , AngelScript::asEObjTypeFlags::type ObjFlag1
             , AngelScript::asEObjTypeFlags::type ObjFlag2
+            , AngelScript::asEObjTypeFlags::type ObjFlag3
         >
-        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS_ALIGN8>
+        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, ObjFlag3>
             : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
         {
             typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
