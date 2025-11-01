@@ -893,6 +893,50 @@ namespace asdk {
 
             };
         } // namespace type_traits
+
+        // reflect_helper
+        namespace type_traits {
+            struct reflect_template_callback_tester
+            {
+                template<class UndrlyingT, class FuncT>
+                static typename template_callback<FuncT, UndrlyingT&>::type
+                template_callback_tester(FuncT func);
+                template<class UnderlyingT>
+                static char
+                template_callback_result_tester(const UnderlyingT&);
+                template<class UnderlyingT>
+                static double
+                template_callback_result_tester(const arg_type_ph&);
+            };
+
+            template<class UnderlyingT, int>
+            struct reflect_helper_cond {
+                typedef arg_type_ph type;
+            };
+            template<class UnderlyingT>
+            struct reflect_helper_cond<UnderlyingT, 1> {
+                typedef UnderlyingT& type;
+            };
+
+            template<class T, class UnderlyingT>
+            struct reflect_helper
+            {
+                enum {
+                    sizeof_array = sizeof(
+                        reflect_template_callback_tester::template_callback_result_tester<UnderlyingT>(
+                            reflect_template_callback_tester::template_callback_tester<UnderlyingT>(T::template_callback)
+                    ))
+                };
+                typedef char(&sizeof_array_type)[sizeof(
+                    reflect_template_callback_tester::template_callback_result_tester<UnderlyingT>(
+                        reflect_template_callback_tester::template_callback_tester<UnderlyingT>(T::template_callback)
+                        ))];
+                typedef
+                typename reflect_helper_cond<UnderlyingT, sizeof(sizeof_array_type )>::type type;
+            };
+        } // namespace type_traits
+
+
 #       ifdef __BORLANDC__
 #       define ASDK_SFINAE_DEFAULT_FUNCTION_ARG(expr) int(*)[1] = 0
 #       else
@@ -1589,35 +1633,11 @@ namespace asdk {
         private:
             using underlying_type::asIScriptEngine;
             using underlying_type::name;
-            struct reflect_helper
-            {
-                template<class FuncT>
-                static typename type_traits::template_callback<FuncT, underlying_type&>::type
-                template_callback_tester(FuncT func);
-                template<class UnderlyingT>
-                static char
-                template_callback_result_tester(const UnderlyingT&);
-                template<class UnderlyingT>
-                static int
-                template_callback_result_tester(const type_traits::arg_type_ph&);
-            };
-            enum {sizeof_array = sizeof(
-                reflect_helper::template template_callback_result_tester< underlying_type>(
-                    reflect_helper::template_callback_tester(T::template_callback)
-                    ))
-            };
-            typedef type_traits::size_is_equal< 
-                sizeof_array, sizeof(char)
-            > size_is_equal;
-            typedef
-            typename type_traits::conditional<
-                underlying_type&, type_traits::arg_type_ph,
-                size_is_equal::value == bool(true)
-            >::type helper_type;
+            
 
         public:
 
-            helper_type
+            typename type_traits::reflect_helper<T, underlying_type>::type
             template_callback() { 
                 return template_callback(T::template_callback); 
             }
