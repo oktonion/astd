@@ -47,7 +47,7 @@
 
 #define DOCTEST_VERSION_MAJOR 1
 #define DOCTEST_VERSION_MINOR 4
-#define DOCTEST_VERSION_PATCH 11
+#define DOCTEST_VERSION_PATCH 12
 
 // util we need here
 #define DOCTEST_TOSTR_IMPL(x) #x
@@ -1167,6 +1167,7 @@ namespace doctest {
         bool no_skip;              // don't skip test cases which are marked to be skipped
         bool gnu_file_line;        // if line numbers should be surrounded with :x: and not (x):
         bool no_path_in_filenames; // if the path to files should be removed from the output
+        String strip_file_prefixes;// remove the longest matching one of these prefixes from any file paths in the output
         bool no_line_numbers;      // if source code line numbers should be omitted from the output
         bool no_debug_output;      // no output in the debug console when a debugger is attached
         bool no_skipped_summary;   // don't print "skipped" in the summary !!! UNDOCUMENTED !!!
@@ -2271,7 +2272,7 @@ DOCTEST_MSVC_SUPPRESS_WARNING_POP
             // https://github.com/catchorg/Catch2/issues/565
             template <typename L>
             Expression_lhs<const DOCTEST_REF_WRAP(typename remove_reference<L>::type)> operator<<(const DOCTEST_REF_WRAP(L) operand) {
-                return Expression_lhs<const DOCTEST_REF_WRAP(typename remove_reference<L>::type)>(operand, m_at);
+                return Expression_lhs<const DOCTEST_REF_WRAP(typename remove_reference<L>::type)>(static_cast<const DOCTEST_REF_WRAP(typename remove_reference<L>::type)>(operand), m_at);
             }
         };
 
@@ -3014,6 +3015,16 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
                                          * dec);                                                   \
                 iter<std::tuple<Rest...>>(file, line, index + 1);                                  \
             }                                                                                      \
+        };                                                                                         \
+        template <typename... Rest>                                                                \
+        struct iter<std::tuple<doctest::detail::NullType, Rest...>>                                \
+        {                                                                                          \
+            iter(const char*, unsigned, int) {}                                                    \
+        };                                                                                         \
+        template <>                                                                                \
+        struct iter<std::tuple<doctest::detail::NullType>>                                         \
+        {                                                                                          \
+            iter(const char*, unsigned, int) {}                                                    \
         };                                                                                         \
         template <>                                                                                \
         struct iter<std::tuple<>>                                                                  \
@@ -4291,6 +4302,10 @@ DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END
 #define DOCTEST_CONFIG_OPTIONS_PREFIX "dt-"
 #endif
 
+#ifndef DOCTEST_CONFIG_OPTIONS_FILE_PREFIX_SEPARATOR
+#define DOCTEST_CONFIG_OPTIONS_FILE_PREFIX_SEPARATOR ':'
+#endif
+
 #ifndef DOCTEST_CONFIG_WITH_THREAD_LOCAL
 #if DOCTEST_CLANG && DOCTEST_CLANG_HAS_FEATURE(cxx_thread_local)
 #define DOCTEST_CONFIG_WITH_THREAD_LOCAL
@@ -4888,7 +4903,7 @@ DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END
     }
 
     String String::substr(size_type pos, size_type cnt) const {
-        cnt = (cnt < size() - 1 - pos ? cnt : size() - 1 - pos);
+        cnt = (cnt < size() - pos ? cnt : size() - pos);
         return String(c_str() + pos, cnt);
     }
 
@@ -5024,6 +5039,27 @@ DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END
                     forward = back;
                 return forward + 1;
             }
+        } else {
+            const String prefixes = getContextOptions()->strip_file_prefixes;
+            const char separator = DOCTEST_CONFIG_OPTIONS_FILE_PREFIX_SEPARATOR;
+            String::size_type longest_match = 0U;
+            for(String::size_type pos = 0U; pos < prefixes.size(); ++pos)
+            {
+                const String::size_type prefix_start = pos;
+                pos = (pos = prefixes.find(separator, prefix_start)) < prefixes.size() ? pos : prefixes.size();
+                
+                const String::size_type prefix_size = pos - prefix_start;
+                if(prefix_size > longest_match)
+                {
+                    // TODO under DOCTEST_MSVC: does the comparison need strnicmp() to work with drive letter capitalization?
+                    using namespace std;
+                    if(0 == strncmp(prefixes.c_str() + prefix_start, file, prefix_size))
+                    {
+                        longest_match = prefix_size;
+                    }
+                }
+            }
+            return &file[longest_match];
         }
 #endif // DOCTEST_CONFIG_DISABLE
         return file;
@@ -7563,6 +7599,8 @@ namespace doctest {
                     << Whitespace(sizePrefixDisplay * 1) << ":n: vs (n): for line numbers in output\n";
                 s << " -" DOCTEST_OPTIONS_PREFIX_DISPLAY "npf, --" DOCTEST_OPTIONS_PREFIX_DISPLAY "no-path-filenames=<bool>      "
                     << Whitespace(sizePrefixDisplay * 1) << "only filenames and no paths in output\n";
+                s << " -" DOCTEST_OPTIONS_PREFIX_DISPLAY "spp, --" DOCTEST_OPTIONS_PREFIX_DISPLAY "skip-path-prefixes=<p1:p2>    "
+                  << Whitespace(sizePrefixDisplay*1) << "whenever file paths start with this prefix, remove it from the output\n";
                 s << " -" DOCTEST_OPTIONS_PREFIX_DISPLAY "nln, --" DOCTEST_OPTIONS_PREFIX_DISPLAY "no-line-numbers=<bool>        "
                     << Whitespace(sizePrefixDisplay * 1) << "0 instead of real line numbers in output\n";
                 // ================================================================================== << 79
@@ -8101,6 +8139,7 @@ namespace doctest {
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("no-skip", "ns", no_skip, false);
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("gnu-file-line", "gfl", gnu_file_line, !bool(DOCTEST_MSVC));
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("no-path-filenames", "npf", no_path_in_filenames, false);
+        DOCTEST_PARSE_STR_OPTION("strip-file-prefixes", "sfp", strip_file_prefixes, "");
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("no-line-numbers", "nln", no_line_numbers, false);
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("no-debug-output", "ndo", no_debug_output, false);
         DOCTEST_PARSE_AS_BOOL_OR_FLAG("no-skipped-summary", "nss", no_skipped_summary, false);
