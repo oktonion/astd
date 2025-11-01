@@ -671,11 +671,22 @@ TEST_CASE("asdk: exposing and reflection")
         typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE, asOBJ_APP_CLASS_ALLINTS> reflect;
         {
             int is_template[reflect::flags::is_template ? 1 : -1];
-            typedef asdk::type_traits::constructor<reflect::flags, my_value_class, void (*)(my_value_class&, asITypeInfo&), int, void(*)()>::type type;
-            int ctor_tmpl_is_constructor[sizeof type];
+            typedef 
+            asdk::type_traits::constructor<
+                  reflect::flags
+                , my_value_class
+                , void (*)(my_value_class&, asITypeInfo&)
+                , int
+                , void(*)()
+            > constructor_traits;
+
+            int is_template_traits[constructor_traits::flags::is_template ? 1 : -1];
+            constructor_traits::type constructor_traits_type;
+
+            int ctor_tmpl_is_constructor[sizeof(constructor_traits::type)];
 
             DOCTEST_STATIC_ASSERT((
-                asdk::type_traits::is_same<type, int>::value
+                asdk::type_traits::is_same<constructor_traits::type, int>::value
             ), fail);
         }
 
