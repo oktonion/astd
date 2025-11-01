@@ -584,6 +584,7 @@ TEST_CASE("asdk: exposing and reflection")
     SUBCASE("template: reflection and import of function 'int asdk_exposing_and_reflection_test()'")
     {
         typedef asdk::reflect<my_value_class, asOBJ_TEMPLATE, asOBJ_APP_CLASS_ALLINTS> reflect;
+        int is_template[reflect::flags::is_template ? 1 : -1];
         reflect(my_value_class_tmpl_cstr, asIScriptEngine, true, false, false, false)
             .template_callback()
             .constructor()
