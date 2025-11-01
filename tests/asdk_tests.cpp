@@ -193,7 +193,7 @@ TEST_CASE("asdk: reflection type traits")
 
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             void (*)(asITypeInfo&, my_value_class&), // my_value_class::ctor
             my_value_class,
@@ -201,8 +201,8 @@ TEST_CASE("asdk: reflection type traits")
         > constructor_type_traits;
 
         {
-            typedef int(*is_template_check_type)[constructor_type_traits::IsTemplate ? 1 : -1];
-            int is_template_check[constructor_type_traits::IsTemplate ? 1 : -1];
+            typedef int(*is_template_check_type)[constructor_type_traits::flags::is_template ? 1 : -1];
+            int is_template_check[constructor_type_traits::flags::is_template ? 1 : -1];
         }
 
         {
@@ -263,7 +263,7 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             void (*)(asITypeInfo&, float, my_value_class&), // my_value_class::ctor_float - objlast
             my_value_class,
@@ -326,7 +326,7 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::constructor <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             void (*)(my_value_class&, asITypeInfo&, float), // my_value_class::ctor_float - objfirst
             my_value_class,
@@ -394,7 +394,7 @@ TEST_CASE("asdk: reflection type traits")
     {
         typedef int (my_value_class::* get_val_type)() const;
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             get_val_type, // my_value_class::get_val
             my_value_class,
@@ -428,7 +428,7 @@ TEST_CASE("asdk: reflection type traits")
     {
         typedef void (my_value_class::* set_val_type)(int);
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             set_val_type, // my_value_class::set_val
             my_value_class
@@ -450,7 +450,7 @@ TEST_CASE("asdk: reflection type traits")
 #   endif
     {
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>,
             my_value_class,
             bool (*)(const my_value_class&, const my_value_class&), // my_value_class::operator==
             my_value_class,
@@ -480,7 +480,7 @@ TEST_CASE("asdk: reflection type traits")
     }
     {
         typedef type_traits::function <
-            AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS,
+            type_traits::reflect_flags<AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS>,
             my_value_class,
             my_value_class(*)(int, const my_value_class&), // opAdd_r
             my_value_class,
