@@ -2978,6 +2978,18 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
     DOCTEST_IMPLEMENT_FIXTURE(DOCTEST_ANONYMOUS(DOCTEST_ANON_CLASS_), c,                           \
                               DOCTEST_ANONYMOUS(DOCTEST_ANON_FUNC_), decorators)
 
+#define DOCTEST_TEST_CASE_TEMPLATE_FIXTURE_IMPL(der, base, type, types, decorators)                \
+    namespace {                                                                                    \
+        template<class type> struct der : base<type> { void f(); };                                \
+        template<class type> struct der< base<type> > : der<type> { void f(){der<type>::f();} };   \
+    }                                                                                              \
+    DOCTEST_TEST_CASE_TEMPLATE(decorators, type, types) { der < type > v; v.f(); }                 \
+    template<class type> DOCTEST_INLINE_NOINLINE void der<type>::f() // NOLINT(misc-definitions-in-headers)
+
+#define DOCTEST_TEST_CASE_TEMPLATE_FIXTURE(c, types, decorators)                                   \
+    DOCTEST_TEST_CASE_TEMPLATE_FIXTURE_IMPL(DOCTEST_ANONYMOUS(DOCTEST_ANON_CLASS_), c,             \
+                                            DOCTEST_ANONYMOUS(DOCTEST_ANON_T_), types, decorators)
+
 // for converting types to strings without the <typeinfo> header and demangling
 #define DOCTEST_TYPE_TO_STRING_AS(str, args)                                                  \
     namespace doctest {                                                                            \
@@ -3693,8 +3705,20 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
 
 // for registering tests with a fixture
 #define DOCTEST_TEST_CASE_FIXTURE(x, name)                                                         \
-    DOCTEST_IMPLEMENT_FIXTURE(DOCTEST_ANONYMOUS(DOCTEST_ANON_CLASS_), x,                          \
+    DOCTEST_IMPLEMENT_FIXTURE(DOCTEST_ANONYMOUS(DOCTEST_ANON_CLASS_), x,                           \
                               DOCTEST_ANONYMOUS(DOCTEST_ANON_FUNC_), name)
+
+#define DOCTEST_TEST_CASE_TEMPLATE_FIXTURE_IMPL(der, base, type, types, decorators)                \
+    namespace {                                                                                    \
+        template<class type> struct der : base<type> { void f(); };                                \
+        template<class type> struct der< base<type> > : der<type> { void f(){der<type>::f();} };   \
+    }                                                                                              \
+    DOCTEST_TEST_CASE_TEMPLATE(decorators, type, types) { der < type > v; v.f(); }                 \
+    template<class type> DOCTEST_INLINE_NOINLINE void der<type>::f() // NOLINT(misc-definitions-in-headers)
+
+#define DOCTEST_TEST_CASE_TEMPLATE_FIXTURE(c, types, decorators)                                   \
+    DOCTEST_TEST_CASE_TEMPLATE_FIXTURE_IMPL(DOCTEST_ANONYMOUS(DOCTEST_ANON_CLASS_), c,             \
+                                            DOCTEST_ANONYMOUS(DOCTEST_ANON_T_), types, decorators)
 
 // for typed tests
 #ifdef DOCTEST_CONFIG_WITH_VARIADIC_MACROS
@@ -3980,6 +4004,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
 #define TEST_CASE DOCTEST_TEST_CASE
 #define TEST_CASE_CLASS DOCTEST_TEST_CASE_CLASS
 #define TEST_CASE_FIXTURE DOCTEST_TEST_CASE_FIXTURE
+#define TEST_CASE_TEMPLATE_FIXTURE DOCTEST_TEST_CASE_TEMPLATE_FIXTURE
 #define TYPE_TO_STRING_AS DOCTEST_TYPE_TO_STRING_AS
 #define TYPE_TO_STRING DOCTEST_TYPE_TO_STRING
 #define TEST_CASE_TEMPLATE DOCTEST_TEST_CASE_TEMPLATE
