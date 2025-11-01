@@ -735,6 +735,11 @@ namespace asdk {
                 typedef typename arg_last<func_traits_type>::type argN_type;
 
             };
+
+            template<class Flags, class ClassT, class FuncT, class ReflectionT, class DeclT>
+            struct constructor<Flags, ClassT, FuncT&, ReflectionT, DeclT>
+                : constructor<Flags, ClassT, FuncT*, ReflectionT, DeclT>
+            { };
         }
 
         // function
