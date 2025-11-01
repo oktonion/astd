@@ -675,7 +675,7 @@ TEST_CASE("asdk: exposing and reflection")
             asdk::type_traits::constructor<
                   reflect::flags
                 , my_value_class
-                , void (*)(my_value_class&, asITypeInfo&)
+                , void (&)(my_value_class&, asITypeInfo&)
                 , int
                 , void(*)()
             > constructor_traits;
