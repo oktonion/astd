@@ -1395,6 +1395,15 @@ namespace asdk {
                 return operator_add<T, const OtherT&, const ThisT&>(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), name, other_str);
             }
 
+            template<class OtherT, class ThisT>
+            reflect&
+            operator+(
+                typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
+                , sizeof((*static_cast<OtherT*>(0)) + (*static_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
+            {
+                return operator_add<OtherT, ThisT>(other_str);
+            }
+
         protected:
             AngelScript::asIScriptEngine* asIScriptEngine;
             std::string name;
