@@ -1354,7 +1354,7 @@ namespace asdk {
             reflect&
             operator+(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((*static_cast<T*>(0)) + (*static_cast<OtherT*>(0))) == sizeof(T)>::type other_str)
+                , sizeof((*reinterpret_cast<T*>(0)) + (*reinterpret_cast<OtherT*>(0))) == sizeof(T)>::type other_str)
             {
                 return operator_add<OtherT>(other_str);
             }
@@ -1399,7 +1399,7 @@ namespace asdk {
             reflect&
             operator+(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((*static_cast<OtherT*>(0)) + (*static_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
+                , sizeof((*reinterpret_cast<OtherT*>(0)) + (*reinterpret_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
             {
                 return operator_add<OtherT, ThisT>(other_str);
             }
