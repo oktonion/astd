@@ -1351,9 +1351,10 @@ namespace asdk {
             }
 
             template<class OtherT>
-            typename type_traits::conditional<reflect&, type_traits::arg_type_ph
-                , sizeof(static_cast<T>(*(T*)(0)) + static_cast<OtherT>(*(OtherT*)(0))) == sizeof(T)>::type
-            operator+(const std::string &other_str)
+            reflect&
+            operator+(
+                typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
+                , sizeof((*static_cast<T*>(0)) + (*static_cast<OtherT*>(0))) == sizeof(T)>::type other_str)
             {
                 return operator_add<OtherT>(other_str);
             }
