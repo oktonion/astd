@@ -1354,7 +1354,7 @@ namespace asdk {
             reflect&
             operator+(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((*static_cast<T*>(0)) + (*static_cast<OtherT*>(0))) == sizeof(T)>::type other_str)
+                , sizeof((*reinterpret_cast<T*>(0)) + (*reinterpret_cast<OtherT*>(0))) == sizeof(T)>::type other_str)
             {
                 return operator_add<OtherT>(other_str);
             }
@@ -1393,6 +1393,15 @@ namespace asdk {
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG((static_cast<OtherT>(*(OtherT*)(0)) + static_cast<ThisT>(*(ThisT*)(0)))))
             {
                 return operator_add<T, const OtherT&, const ThisT&>(static_cast<T(*)(const OtherT&, const ThisT&)>(opAdd), name, other_str);
+            }
+
+            template<class OtherT, class ThisT>
+            reflect&
+            operator+(
+                typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
+                , sizeof((*reinterpret_cast<OtherT*>(0)) + (*reinterpret_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
+            {
+                return operator_add<OtherT, ThisT>(other_str);
             }
 
         protected:

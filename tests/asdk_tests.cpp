@@ -703,7 +703,7 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_equal_to<my_value_class>("const my_value_class<T> & in")
             .operator_compare()
             .operator+<int>("int")
-            //.operator+<int, my_value_class>()
+            .operator+<int, my_value_class>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
@@ -727,8 +727,8 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_assign()
             .operator_equal_to()
             .operator_compare<my_value_class>("const my_value_class & in")
+            .operator_add<int>("int")
             .operator_add<int, my_value_class>("int")
-            //.operator+<int, my_value_class>()
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_path, "int asdk_exposing_and_reflection_test()");
