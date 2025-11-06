@@ -655,6 +655,10 @@ TEST_CASE("asdk: exposing and reflection")
                 , asFUNCTIONPR(operator+, (const my_value_class&, int), my_value_class), asCALL_CDECL_OBJFIRST)
         );
         REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opAdd_r(int) const")
+                , asFUNCTIONPR(operator+, (int, const my_value_class&), my_value_class), asCALL_CDECL_OBJLAST)
+        );
+        REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string("& opAssign(const ") + my_value_class_tmpl_cstr + " & in) const"
                 , asMETHODPR(my_value_class, operator=, (const my_value_class&), my_value_class&), asCALL_THISCALL)
         );
