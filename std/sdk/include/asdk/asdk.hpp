@@ -319,6 +319,11 @@ namespace asdk {
             template<class IfTrueT, class IfFalseT>
             struct conditional<IfTrueT, IfFalseT, false> { typedef IfFalseT type; };
 
+            template<class IfTrueT, class IfFalseT, class, class>
+            struct conditional_is_same { typedef IfFalseT type; };
+            template<class IfTrueT, class IfFalseT, class T>
+            struct conditional_is_same<IfTrueT, IfFalseT, T, T> { typedef IfTrueT type; };
+
             template<class T>
             struct remove_reference { typedef T type; };
             template<class T>
@@ -968,6 +973,7 @@ namespace asdk {
         >
         struct reflect
         {
+            enum { sizeof_T = sizeof(T), sizeof_Tx2 = sizeof_T * 2 };
             typedef type_traits::reflect_flags<ObjTypeT, ObjFlag1, ObjFlag2, ObjFlag3> flags;
 
             typedef AngelScript::asITypeInfo asITypeInfo;
@@ -1399,7 +1405,7 @@ namespace asdk {
             reflect&
             operator+(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((OtherT)(*((OtherT*)(42))) + (ThisT)(*((ThisT*)(42)))) == sizeof(T)>::type other_str)
+                , sizeof((OtherT)(*((OtherT*)(42))) + (T)(*((T*)(42)))) != sizeof_Tx2>::type other_str)
             {
                 return operator_add<OtherT, ThisT>(other_str);
             }
@@ -1512,7 +1518,7 @@ namespace asdk {
             reflect&
             operator-(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((*static_cast<OtherT*>(0)) - (*static_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
+                , sizeof((OtherT)(*((OtherT*)(42))) - (T)(*((T*)(42)))) != sizeof_Tx2>::type other_str)
             {
                 return operator_substract<OtherT, ThisT>(other_str);
             }
@@ -1710,6 +1716,7 @@ namespace asdk {
                     suffix += " in";
                 return prefix + other_str + suffix;
             }
+
         };
 
 
