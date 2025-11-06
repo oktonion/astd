@@ -57,6 +57,8 @@ public:
     // Operator overloads
     friend my_value_class operator+(const my_value_class& lhs, int rhs);
     friend my_value_class operator+(int lhs, const my_value_class& rhs);
+    friend my_value_class operator-(const my_value_class& lhs, int rhs);
+    friend my_value_class operator-(int lhs, const my_value_class& rhs);
 
     int value;
     int another_value;
@@ -110,6 +112,13 @@ my_value_class operator+(const my_value_class& lhs, int rhs) {
 }
 my_value_class operator+(int lhs, const my_value_class& rhs) {
     return my_value_class(lhs + rhs.value);
+}
+
+my_value_class operator-(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value - rhs);
+}
+my_value_class operator-(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs - rhs.value);
 }
 
 int operator_compare(
@@ -659,6 +668,14 @@ TEST_CASE("asdk: exposing and reflection")
                 , asFUNCTIONPR(operator+, (int, const my_value_class&), my_value_class), asCALL_CDECL_OBJLAST)
         );
         REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opSub(int) const")
+                , asFUNCTIONPR(operator-, (const my_value_class&, int), my_value_class), asCALL_CDECL_OBJFIRST)
+        );
+        REQUIRE_NOTHROW(
+            asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string(" opSub_r(int) const")
+                , asFUNCTIONPR(operator-, (int, const my_value_class&), my_value_class), asCALL_CDECL_OBJLAST)
+        );
+        REQUIRE_NOTHROW(
             asdk::expose(asIScriptEngine, my_value_class_tmpl_cstr, my_value_class_tmpl_cstr + std::string("& opAssign(const ") + my_value_class_tmpl_cstr + " & in) const"
                 , asMETHODPR(my_value_class, operator=, (const my_value_class&), my_value_class&), asCALL_THISCALL)
         );
@@ -707,7 +724,9 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_equal_to<my_value_class>("const my_value_class<T> & in")
             .operator_compare()
             .operator+<int>("int")
-            .operator_add<int, my_value_class>("int")
+            .operator+<int, my_value_class>("int")
+            .operator-<int>("int")
+            .operator-<int, my_value_class>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
@@ -733,6 +752,8 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_compare<my_value_class>("const my_value_class & in")
             .operator_add<int>("int")
             .operator_add<int, my_value_class>("int")
+            .operator_substract<int>("int")
+            .operator_substract<int, my_value_class>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_path, "int asdk_exposing_and_reflection_test()");
