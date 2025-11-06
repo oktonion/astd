@@ -1399,7 +1399,7 @@ namespace asdk {
             reflect&
             operator+(
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph
-                , sizeof((*static_cast<OtherT*>(0)) + (*static_cast<ThisT*>(0))) == sizeof(T)>::type other_str)
+                , sizeof((OtherT)(*((OtherT*)(42))) + (ThisT)(*((ThisT*)(42)))) == sizeof(T)>::type other_str)
             {
                 return operator_add<OtherT, ThisT>(other_str);
             }
