@@ -204,14 +204,14 @@ namespace astd {
     void* ptr_memory::address() throw()
     {
         void* result = NULL;
-        std::memcpy(result, &reinterpret_cast<astd::ptr*>(data)->address, sizeof(result));
+        std::memcpy(&result, &reinterpret_cast<astd::ptr*>(data)->address, sizeof(result));
         return result;
     }
 
     const void* ptr_memory::address() const throw()
     {
         void* result = NULL;
-        std::memcpy(result, &reinterpret_cast<const astd::ptr*>(data)->address, sizeof(result));
+        std::memcpy(&result, &reinterpret_cast<const astd::ptr*>(data)->address, sizeof(result));
         return result;
     }
 }
