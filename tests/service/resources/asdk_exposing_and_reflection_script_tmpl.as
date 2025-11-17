@@ -86,5 +86,21 @@ int asdk_exposing_and_reflection_test()
         if (result != -1) return -13;
     }
     
+    {
+        my_value_class<int> value(2);
+		
+        value+=2;
+        my_value_class<int> result = value+=3;
+        if (result != 2+2+3) return -12;
+    }
+    
+    {
+        my_value_class<int> value(2+2+3);
+		
+        value-=2;
+        my_value_class<int> result = value-=3;
+        if (result != 2) return -13;
+    }
+    
     return 0;
 }
