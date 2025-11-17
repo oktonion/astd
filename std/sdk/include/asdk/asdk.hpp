@@ -1516,6 +1516,18 @@ namespace asdk {
             // operator%=
             ASSIGNMENT_OPERATOR_DEF(operator_mod_assign, opModAssign, %=)
 
+            // operator&
+            BINARY_OPERATOR_DEF(operator_and, opAnd, &)
+
+            // operator&=
+            ASSIGNMENT_OPERATOR_DEF(operator_and_assign, opAndAssign, &=)
+
+            // operator|
+            BINARY_OPERATOR_DEF(operator_or, opOr, |)
+
+            // operator|=
+            ASSIGNMENT_OPERATOR_DEF(operator_or_assign, opOrAssign, |=)
+
 #          undef BINARY_OPERATOR_DEF
 #          undef ASSIGNMENT_OPERATOR_DEF
 
@@ -1573,6 +1585,30 @@ namespace asdk {
                     asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
                 else
                     asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
+            }
+
+            template<class ThisT, class OtherT>
+            inline static ThisT& opOrAssign(ThisT& lhs, OtherT rhs) // objfirst
+            {
+                return lhs |= rhs;
+            }
+
+            template<class ThisT, class OtherT>
+            inline static T opOr(ThisT lhs, OtherT rhs) // objfirst
+            {
+                return lhs | rhs;
+            }
+
+            template<class ThisT, class OtherT>
+            inline static ThisT& opAndAssign(ThisT& lhs, OtherT rhs) // objfirst
+            {
+                return lhs &= rhs;
+            }
+
+            template<class ThisT, class OtherT>
+            inline static T opAnd(ThisT lhs, OtherT rhs) // objfirst
+            {
+                return lhs & rhs;
             }
 
             template<class ThisT, class OtherT>
