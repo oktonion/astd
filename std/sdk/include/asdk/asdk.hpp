@@ -1516,6 +1516,9 @@ namespace asdk {
             // operator%=
             ASSIGNMENT_OPERATOR_DEF(operator_mod_assign, opModAssign, %=)
 
+#          undef BINARY_OPERATOR_DEF
+#          undef ASSIGNMENT_OPERATOR_DEF
+
             
         protected:
             AngelScript::asIScriptEngine* asIScriptEngine;
@@ -1865,5 +1868,6 @@ namespace asdk {
 #undef ASDK_CAT3
 #undef ASDK_CAT2
 #undef ASDK_CAT
+#undef ASDK_STRINGIFY
 
 #endif // ANGELSCRIPT_SOFTWARE_DEVELOPMENT_KIT_HPP
