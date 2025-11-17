@@ -59,8 +59,17 @@ public:
     friend my_value_class operator+(int lhs, const my_value_class& rhs);
     friend my_value_class operator-(const my_value_class& lhs, int rhs);
     friend my_value_class operator-(int lhs, const my_value_class& rhs);
+    friend my_value_class operator*(const my_value_class& lhs, int rhs);
+    friend my_value_class operator*(int lhs, const my_value_class& rhs);
+    friend my_value_class operator/(const my_value_class& lhs, int rhs);
+    friend my_value_class operator/(int lhs, const my_value_class& rhs);
+    friend my_value_class operator%(const my_value_class& lhs, int rhs);
+    friend my_value_class operator%(int lhs, const my_value_class& rhs);
     friend my_value_class& operator+=(my_value_class& lhs, int rhs);
     friend my_value_class& operator-=(my_value_class& lhs, int rhs);
+    friend my_value_class& operator*=(my_value_class& lhs, int rhs);
+    friend my_value_class& operator/=(my_value_class& lhs, int rhs);
+    friend my_value_class& operator%=(my_value_class& lhs, int rhs);
 
     int value;
     int another_value;
@@ -122,11 +131,42 @@ my_value_class operator-(const my_value_class& lhs, int rhs) {
 my_value_class operator-(int lhs, const my_value_class& rhs) {
     return my_value_class(lhs - rhs.value);
 }
+
+my_value_class operator*(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value * rhs);
+}
+my_value_class operator*(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs * rhs.value);
+}
+
+my_value_class operator/(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value / rhs);
+}
+my_value_class operator/(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs / rhs.value);
+}
+
+my_value_class operator%(const my_value_class& lhs, int rhs) {
+    return my_value_class(lhs.value % rhs);
+}
+my_value_class operator%(int lhs, const my_value_class& rhs) {
+    return my_value_class(lhs % rhs.value);
+}
+
 my_value_class &operator+=(my_value_class& lhs, int rhs) {
     lhs.value += rhs; return lhs;
 }
 my_value_class& operator-=(my_value_class& lhs, int rhs) {
     lhs.value -= rhs; return lhs;
+}
+my_value_class& operator*=(my_value_class& lhs, int rhs) {
+    lhs.value *= rhs; return lhs;
+}
+my_value_class& operator/=(my_value_class& lhs, int rhs) {
+    lhs.value /= rhs; return lhs;
+}
+my_value_class& operator%=(my_value_class& lhs, int rhs) {
+    lhs.value %= rhs; return lhs;
 }
 
 int operator_compare(
@@ -743,8 +783,17 @@ TEST_CASE("asdk: exposing and reflection")
             .operator+<int, my_value_class>("int")
             .operator-<int>("int")
             .operator-<int, my_value_class>("int")
+            .operator*<int>("int")
+            .operator*<int, my_value_class>("int")
+            .operator/<int>("int")
+            .operator/<int, my_value_class>("int")
+            .operator%<int>("int")
+            .operator%<int, my_value_class>("int")
             .operator+=<int>("int")
             .operator-=<int>("int")
+            .operator*=<int>("int")
+            .operator/=<int>("int")
+            .operator%=<int>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
@@ -772,8 +821,17 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_add<int, my_value_class>("int")
             .operator_substract<int>("int")
             .operator_substract<int, my_value_class>("int")
+            .operator_multiply<int>("int")
+            .operator_multiply<int, my_value_class>("int")
+            .operator_divide<int>("int")
+            .operator_divide<int, my_value_class>("int")
+            .operator_mod<int>("int")
+            .operator_mod<int, my_value_class>("int")
             .operator_add_assign<int>("int")
             .operator_substract_assign<int>("int")
+            .operator_multiply_assign<int>("int")
+            .operator_divide_assign<int>("int")
+            .operator_mod_assign<int>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_path, "int asdk_exposing_and_reflection_test()");

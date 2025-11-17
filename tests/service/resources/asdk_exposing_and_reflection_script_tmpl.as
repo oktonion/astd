@@ -91,7 +91,7 @@ int asdk_exposing_and_reflection_test()
 		
         value+=2;
         my_value_class<int> result = value+=3;
-        if (result != 2+2+3) return -12;
+        if (result != 2+2+3) return -14;
     }
     
     {
@@ -99,7 +99,7 @@ int asdk_exposing_and_reflection_test()
 		
         value-=2;
         my_value_class<int> result = value-=3;
-        if (result != 2) return -13;
+        if (result != 2) return -15;
     }
     
     return 0;
