@@ -105,6 +105,8 @@ fmt::File::File(fmt::CStringRef path, int oflag) {
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__BORLANDC__)
   fd_ = -1;
   FMT_POSIX_CALL(sopen_s(&fd_, path.c_str(), oflag, _SH_DENYNO, mode));
+#elif defined(__BORLANDC__)
+  FMT_RETRY(fd_, FMT_POSIX_CALL(open(path.c_str(), mode)));
 #else
   FMT_RETRY(fd_, FMT_POSIX_CALL(open(path.c_str(), oflag, mode)));
 #endif
@@ -202,7 +204,7 @@ void fmt::File::pipe(File &read_end, File &write_end) {
   // and there are no leaks.
   read_end.close();
   write_end.close();
-  int fds[2] = {};
+  int fds[] = {0, 0};
 #ifdef _WIN32
   // Make the default pipe capacity same as on Linux 2.6.11+.
   enum { DEFAULT_CAPACITY = 65536 };
@@ -222,7 +224,7 @@ void fmt::File::pipe(File &read_end, File &write_end) {
 
 fmt::BufferedFile fmt::File::fdopen(const char *mode) {
   // Don't retry as fdopen doesn't return EINTR.
-  FILE *f = FMT_POSIX_CALL(fdopen(fd_, mode));
+  FILE *f = FMT_POSIX_CALL(fdopen(fd_, (char*)(mode)));
   if (!f)
     FMT_THROW(SystemError(errno, "cannot associate stream with file descriptor"));
   BufferedFile file(f);

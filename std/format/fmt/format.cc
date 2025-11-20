@@ -33,10 +33,13 @@
 #if !defined(UNDER_CE)
 # include <cerrno>
 #endif
+#include <errno.h>
 #include <climits>
 #include <cmath>
 #include <cstdarg>
 #include <cstddef>  // for std::ptrdiff_t
+#include <cstdio>
+#include <stdio.h>
 
 #if defined(_WIN32) && defined(__MINGW32__)
 # include <cstring>
@@ -101,9 +104,16 @@ FMT_FUNC SystemError::~SystemError() FMT_DTOR_NOEXCEPT {}
 
 namespace {
 
-#ifndef _MSC_VER
-# define FMT_SNPRINTF snprintf
-#else  // _MSC_VER
+#if defined(__BORLANDC__)
+inline int fmt_snprintf(char *buffer, size_t size, const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  int result = vsprintf(buffer, format, args);
+  va_end(args);
+  return result;
+}
+# define FMT_SNPRINTF fmt_snprintf
+#elif defined(_MSC_VER)
 inline int fmt_snprintf(char *buffer, size_t size, const char *format, ...) {
   va_list args;
   va_start(args, format);
@@ -116,6 +126,8 @@ inline int fmt_snprintf(char *buffer, size_t size, const char *format, ...) {
   return result;
 }
 # define FMT_SNPRINTF fmt_snprintf
+#else
+# define FMT_SNPRINTF snprintf
 #endif  // _MSC_VER
 
 #if defined(_WIN32) && defined(__MINGW32__) && !defined(__NO_ISOCEXT)
@@ -124,7 +136,18 @@ inline int fmt_snprintf(char *buffer, size_t size, const char *format, ...) {
 # if defined(UNDER_CE)
 #  define FMT_SWPRINTF swprintf_s
 # else
-#  define FMT_SWPRINTF swprintf
+#  if defined(__BORLANDC__)
+    inline int fmt_swprintf(wchar_t *buffer, size_t size, const wchar_t *format, ...) {
+        va_list args;
+        va_start(args, format);
+        int result = vswprintf(buffer, format, args);
+        va_end(args);
+        return result;
+    }
+#  define FMT_SWPRINTF fmt_swprintf
+#  else
+#   define FMT_SWPRINTF swprintf
+#  endif
 #endif
 #endif // defined(_WIN32) && defined(__MINGW32__) && !defined(__NO_ISOCEXT)
 

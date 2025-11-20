@@ -99,7 +99,11 @@ void format_arg(BasicFormatter<Char, ArgFormatter_> &f,
   \endrst
  */
 FMT_API void print(std::ostream &os, CStringRef format_str, ArgList args);
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(void, print, std::ostream &, CStringRef)
+#else
+FMT_VARIADIC4(void, print, std::ostream&, CStringRef)
+#endif
 }  // namespace fmt
 
 #ifdef FMT_HEADER_ONLY

@@ -91,6 +91,10 @@
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int64 uint64_t;
 typedef __int64          intmax_t;
+#elif defined(__BORLANDC__)
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
+typedef long long          intmax_t;
 #else
 #include <stdint.h>
 #endif
@@ -203,6 +207,12 @@ typedef __int64          intmax_t;
 # define FMT_USE_VARIADIC_TEMPLATES \
    (FMT_HAS_FEATURE(cxx_variadic_templates) || \
        (FMT_GCC_VERSION >= 404 && FMT_HAS_GXX_CXX11) || FMT_MSC_VER >= 1800)
+#endif
+
+#ifndef FMT_USE_VARIADIC_MACRO
+# if FMT_USE_VARIADIC_TEMPLATES
+#  define FMT_USE_VARIADIC_MACRO FMT_USE_VARIADIC_TEMPLATES
+# endif
 #endif
 
 #ifndef FMT_USE_RVALUE_REFERENCES
@@ -1028,9 +1038,26 @@ template <typename T>
 struct IntTraits {
   // Smallest of uint32_t and uint64_t that is large enough to represent
   // all values of T.
+  static const bool value = std::numeric_limits<T>::digits <= 32 ? true : false;
   typedef typename
-    TypeSelector<std::numeric_limits<T>::digits <= 32>::Type MainType;
+    TypeSelector<IntTraits::value>::Type MainType;
 };
+
+namespace type_traits {
+    template<class, class>
+    struct is_same { static const bool value = false; };
+    template<class T>
+    struct is_same<T, T> { static const bool value = true; };
+
+    template<class IfTrue, class IfFalse, bool>
+    struct conditional {
+        typedef IfTrue type;
+    };
+    template<class IfTrue, class IfFalse>
+    struct conditional<IfTrue, IfFalse, false> {
+        typedef IfFalse type;
+    };
+}
 
 FMT_NORETURN FMT_API void report_unknown_type(char code, const char *type);
 
@@ -1538,6 +1565,7 @@ class MakeValue : public Arg {
   FMT_MAKE_VALUE(void *, pointer, POINTER)
   FMT_MAKE_VALUE(const void *, pointer, POINTER)
 
+#ifndef __BORLANDC__
   template <typename T>
   MakeValue(const T &value,
             typename EnableIf<Not<
@@ -1551,6 +1579,7 @@ class MakeValue : public Arg {
       type(const T &) {
     return Arg::CUSTOM;
   }
+#endif
 
   // Additional template param `Char_` is needed here because make_type always
   // uses char.
@@ -2140,7 +2169,8 @@ class ArgFormatterBase : public ArgVisitor<Impl, void> {
   void write_pointer(const void *p) {
     spec_.flags_ = HASH_FLAG;
     spec_.type_ = 'x';
-    writer_.write_int(reinterpret_cast<uintptr_t>(p), spec_);
+    typedef uint64_t uintptr_type;
+    writer_.write_int(reinterpret_cast<uintptr_type>(p), spec_);
   }
 
   // workaround MSVC two-phase lookup issue
@@ -2224,7 +2254,16 @@ class ArgFormatterBase : public ArgVisitor<Impl, void> {
     writer_.write_str(value, spec_);
   }
 
-  using ArgVisitor<Impl, void>::visit_wstring;
+  //using ArgVisitor<Impl, void>::visit_wstring;
+  typedef
+  typename
+  internal::type_traits::conditional<
+    void, wchar_t,
+    internal::type_traits::is_same<wchar_t, Char>::value
+  >::type wchar_type;
+  void visit_wstring(internal::Arg::StringValue<wchar_type> value) {
+      ArgVisitor<Impl, void>::visit_wstring(value);
+  }
 
   void visit_wstring(internal::Arg::StringValue<Char> value) {
     writer_.write_str(value, spec_);
@@ -2242,10 +2281,10 @@ class FormatterBase {
   ArgList args_;
   int next_arg_index_;
 
-  // Returns the argument with specified index.
-  FMT_API Arg do_get_arg(unsigned arg_index, const char *&error);
-
  protected:
+
+  // Returns the argument with specified index.
+  FMT_API Arg do_get_arg(unsigned arg_index, const char*& error);
   const ArgList &args() const { return args_; }
 
   explicit FormatterBase(const ArgList &args) {
@@ -2352,7 +2391,10 @@ class BasicFormatter : private internal::FormatterBase {
 
   FMT_DISALLOW_COPY_AND_ASSIGN(BasicFormatter);
 
-  using internal::FormatterBase::get_arg;
+  //using internal::FormatterBase::get_arg;
+  internal::Arg get_arg(unsigned arg_index, const char*& error) {
+      return internal::FormatterBase::check_no_auto_index(error) ? internal::FormatterBase::do_get_arg(arg_index, error) : internal::Arg();
+  }
 
   // Checks if manual indexing is used and returns the argument with
   // specified name.
@@ -3690,16 +3732,24 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 #define FMT_EXPAND(args) args
 
 // Returns the number of arguments.
+ 
+#if FMT_USE_VARIADIC_MACRO
 // Based on https://groups.google.com/forum/#!topic/comp.std.c/d-6Mj5Lko_s.
-#define FMT_NARG(...) FMT_NARG_(__VA_ARGS__, FMT_RSEQ_N())
-#define FMT_NARG_(...) FMT_EXPAND(FMT_ARG_N(__VA_ARGS__))
-#define FMT_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
-#define FMT_RSEQ_N() 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+# define FMT_NARG(...) FMT_NARG_(__VA_ARGS__, FMT_RSEQ_N())
+# define FMT_NARG_(...) FMT_EXPAND(FMT_ARG_N(__VA_ARGS__))
+# define FMT_ARG_N(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+# define FMT_RSEQ_N() 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
 
-#define FMT_FOR_EACH_(N, f, ...) \
-  FMT_EXPAND(FMT_CONCAT(FMT_FOR_EACH, N)(f, __VA_ARGS__))
-#define FMT_FOR_EACH(f, ...) \
-  FMT_EXPAND(FMT_FOR_EACH_(FMT_NARG(__VA_ARGS__), f, __VA_ARGS__))
+# define FMT_FOR_EACH_(N, f, ...) \
+   FMT_EXPAND(FMT_CONCAT(FMT_FOR_EACH, N)(f, __VA_ARGS__))
+# define FMT_FOR_EACH(f, ...) \
+   FMT_EXPAND(FMT_FOR_EACH_(FMT_NARG(__VA_ARGS__), f, __VA_ARGS__))
+#else
+# define FMT_FOR_EACH_2(f, arg1) \
+    FMT_FOR_EACH1(f, arg1)
+# define FMT_FOR_EACH_3(f, arg1, arg2) \
+    FMT_FOR_EACH2(f, arg1, arg2)
+#endif // FMT_USE_VARIADIC_MACRO
 
 #define FMT_ADD_ARG_NAME(type, index) type arg##index
 #define FMT_GET_ARG_NAME(type, index) arg##index
@@ -3718,35 +3768,97 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 #else
 // Defines a wrapper for a function taking __VA_ARGS__ arguments
 // and n additional arguments of arbitrary types.
-# define FMT_WRAP(Const, Char, ReturnType, func, call, n, ...) \
-  template <FMT_GEN(n, FMT_MAKE_TEMPLATE_ARG)> \
-  inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__), \
-      FMT_GEN(n, FMT_MAKE_ARG)) Const { \
-    fmt::internal::ArgArray<n>::Type arr; \
-    FMT_GEN(n, FMT_ASSIGN_##Char); \
-    call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList( \
-      fmt::internal::make_type(FMT_GEN(n, FMT_MAKE_REF2)), arr)); \
-  }
+# if FMT_USE_VARIADIC_MACRO
+#  define FMT_WRAP(Const, Char, ReturnType, func, call, n, ...) \
+   template <FMT_GEN(n, FMT_MAKE_TEMPLATE_ARG)> \
+   inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__), \
+       FMT_GEN(n, FMT_MAKE_ARG)) Const { \
+     fmt::internal::ArgArray<n>::Type arr; \
+     FMT_GEN(n, FMT_ASSIGN_##Char); \
+     call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList( \
+       fmt::internal::make_type(FMT_GEN(n, FMT_MAKE_REF2)), arr)); \
+   }
+# else
+#  define FMT_WRAP7(Const, Char, ReturnType, func, call, n, arg1) \
+   template <FMT_GEN(n, FMT_MAKE_TEMPLATE_ARG)> \
+   inline ReturnType func(FMT_FOR_EACH_2(FMT_ADD_ARG_NAME, arg1), \
+       FMT_GEN(n, FMT_MAKE_ARG)) Const { \
+     fmt::internal::ArgArray<n>::Type arr; \
+     FMT_GEN(n, FMT_ASSIGN_##Char); \
+     call(FMT_FOR_EACH_2(FMT_GET_ARG_NAME, arg1), fmt::ArgList( \
+       fmt::internal::make_type(FMT_GEN(n, FMT_MAKE_REF2)), arr)); \
+   }
+#  define FMT_WRAP8(Const, Char, ReturnType, func, call, n, arg1, arg2) \
+   template <FMT_GEN(n, FMT_MAKE_TEMPLATE_ARG)> \
+   inline ReturnType func(FMT_FOR_EACH_3(FMT_ADD_ARG_NAME, arg1, arg2), \
+       FMT_GEN(n, FMT_MAKE_ARG)) Const { \
+     fmt::internal::ArgArray<n>::Type arr; \
+     FMT_GEN(n, FMT_ASSIGN_##Char); \
+     call(FMT_FOR_EACH_3(FMT_GET_ARG_NAME, arg1, arg2), fmt::ArgList( \
+       fmt::internal::make_type(FMT_GEN(n, FMT_MAKE_REF2)), arr)); \
+   }
+# endif // FMT_USE_VARIADIC_MACRO
 
-# define FMT_VARIADIC_(Const, Char, ReturnType, func, call, ...) \
-  inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__)) Const { \
-    call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList()); \
-  } \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 1, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 2, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 3, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 4, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 5, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 6, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 7, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 8, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 9, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 10, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 11, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 12, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 13, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 14, __VA_ARGS__) \
-  FMT_WRAP(Const, Char, ReturnType, func, call, 15, __VA_ARGS__)
+# if FMT_USE_VARIADIC_MACRO
+#  define FMT_VARIADIC_(Const, Char, ReturnType, func, call, ...) \
+   inline ReturnType func(FMT_FOR_EACH(FMT_ADD_ARG_NAME, __VA_ARGS__)) Const { \
+     call(FMT_FOR_EACH(FMT_GET_ARG_NAME, __VA_ARGS__), fmt::ArgList()); \
+   } \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 1, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 2, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 3, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 4, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 5, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 6, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 7, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 8, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 9, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 10, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 11, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 12, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 13, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 14, __VA_ARGS__) \
+   FMT_WRAP(Const, Char, ReturnType, func, call, 15, __VA_ARGS__)
+# else
+#  define FMT_VARIADIC_6(Const, Char, ReturnType, func, call, arg1) \
+   inline ReturnType func(FMT_FOR_EACH_2(FMT_ADD_ARG_NAME, arg1)) Const { \
+     call(FMT_FOR_EACH_2(FMT_GET_ARG_NAME, arg1), fmt::ArgList()); \
+   } \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 1, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 2, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 3, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 4, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 5, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 6, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 7, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 8, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 9, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 10, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 11, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 12, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 13, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 14, arg1) \
+   FMT_WRAP7(Const, Char, ReturnType, func, call, 15, arg1)
+#  define FMT_VARIADIC_7(Const, Char, ReturnType, func, call, arg1, arg2) \
+   inline ReturnType func(FMT_FOR_EACH_3(FMT_ADD_ARG_NAME, arg1, arg2)) Const { \
+     call(FMT_FOR_EACH_3(FMT_GET_ARG_NAME, arg1, arg2), fmt::ArgList()); \
+   } \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 1, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 2, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 3, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 4, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 5, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 6, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 7, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 8, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 9, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 10, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 11, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 12, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 13, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 14, arg1, arg2) \
+   FMT_WRAP8(Const, Char, ReturnType, func, call, 15, arg1, arg2)
+#endif // FMT_USE_VARIADIC_MACRO
 #endif  // FMT_USE_VARIADIC_TEMPLATES
 
 /**
@@ -3776,6 +3888,7 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
     }
   \endrst
  */
+#if FMT_USE_VARIADIC_MACRO
 #define FMT_VARIADIC(ReturnType, func, ...) \
   FMT_VARIADIC_(, char, ReturnType, func, return func, __VA_ARGS__)
 
@@ -3787,11 +3900,37 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 
 #define FMT_VARIADIC_CONST_W(ReturnType, func, ...) \
   FMT_VARIADIC_(const, wchar_t, ReturnType, func, return func, __VA_ARGS__)
+#else
+#define FMT_VARIADIC3(ReturnType, func, arg1) \
+  FMT_VARIADIC_6(, char, ReturnType, func, return func, arg1)
+
+#define FMT_VARIADIC_CONST3(ReturnType, func, arg1) \
+  FMT_VARIADIC_6(const, char, ReturnType, func, return func, arg1)
+
+#define FMT_VARIADIC_W3(ReturnType, func, arg1) \
+  FMT_VARIADIC_6(, wchar_t, ReturnType, func, return func, arg1)
+
+#define FMT_VARIADIC_CONST_W3(ReturnType, func, arg1) \
+  FMT_VARIADIC_6(const, wchar_t, ReturnType, func, return func, arg1)
+
+#define FMT_VARIADIC4(ReturnType, func, arg1, arg2) \
+  FMT_VARIADIC_7(, char, ReturnType, func, return func, arg1, arg2)
+
+#define FMT_VARIADIC_CONST4(ReturnType, func, arg1, arg2) \
+  FMT_VARIADIC_7(const, char, ReturnType, func, return func, arg1, arg2)
+
+#define FMT_VARIADIC_W4(ReturnType, func, arg1, arg2) \
+  FMT_VARIADIC_7(, wchar_t, ReturnType, func, return func, arg1, arg2)
+
+#define FMT_VARIADIC_CONST_W4(ReturnType, func, arg1, arg2) \
+  FMT_VARIADIC_7(const, wchar_t, ReturnType, func, return func, arg1, arg2)
+#endif // FMT_USE_VARIADIC_MACRO
 
 #define FMT_CAPTURE_ARG_(id, index) ::fmt::arg(#id, id)
 
 #define FMT_CAPTURE_ARG_W_(id, index) ::fmt::arg(L###id, id)
 
+#if FMT_USE_VARIADIC_MACRO
 /**
   \rst
   Convenient macro to capture the arguments' names and values into several
@@ -3809,13 +3948,22 @@ void arg(WStringRef, const internal::NamedArg<Char>&) FMT_DELETED_OR_UNDEFINED;
 #define FMT_CAPTURE(...) FMT_FOR_EACH(FMT_CAPTURE_ARG_, __VA_ARGS__)
 
 #define FMT_CAPTURE_W(...) FMT_FOR_EACH(FMT_CAPTURE_ARG_W_, __VA_ARGS__)
+#endif // FMT_USE_VARIADIC_MACRO
 
 namespace fmt {
+#if FMT_USE_VARIADIC_MACRO
 FMT_VARIADIC(std::string, format, CStringRef)
 FMT_VARIADIC_W(std::wstring, format, WCStringRef)
 FMT_VARIADIC(void, print, CStringRef)
 FMT_VARIADIC(void, print, std::FILE *, CStringRef)
 FMT_VARIADIC(void, print_colored, Color, CStringRef)
+#else
+FMT_VARIADIC3(std::string, format, CStringRef)
+FMT_VARIADIC_W3(std::wstring, format, WCStringRef)
+FMT_VARIADIC3(void, print, CStringRef)
+FMT_VARIADIC4(void, print, std::FILE *, CStringRef)
+FMT_VARIADIC4(void, print_colored, Color, CStringRef)
+#endif // FMT_USE_VARIADIC_MACRO
 
 namespace internal {
 template <typename Char>

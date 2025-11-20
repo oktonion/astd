@@ -522,12 +522,21 @@ void PrintfFormatter<Char, AF>::format(BasicCStringRef<Char> format_str) {
 inline void printf(Writer &w, CStringRef format, ArgList args) {
   PrintfFormatter<char>(args, w).format(format);
 }
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(void, printf, Writer &, CStringRef)
+#else
+FMT_VARIADIC4(void, printf, Writer&, CStringRef)
+#endif
+
 
 inline void printf(WWriter &w, WCStringRef format, ArgList args) {
   PrintfFormatter<wchar_t>(args, w).format(format);
 }
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(void, printf, WWriter &, WCStringRef)
+#else
+FMT_VARIADIC4(void, printf, WWriter&, WCStringRef)
+#endif
 
 /**
   \rst
@@ -543,14 +552,22 @@ inline std::string sprintf(CStringRef format, ArgList args) {
   printf(w, format, args);
   return w.str();
 }
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(std::string, sprintf, CStringRef)
+#else
+FMT_VARIADIC3(std::string, sprintf, CStringRef)
+#endif
 
 inline std::wstring sprintf(WCStringRef format, ArgList args) {
   WMemoryWriter w;
   printf(w, format, args);
   return w.str();
 }
+#ifdef FMT_VARIADIC_W
 FMT_VARIADIC_W(std::wstring, sprintf, WCStringRef)
+#else
+FMT_VARIADIC_W3(std::wstring, sprintf, WCStringRef)
+#endif
 
 /**
   \rst
@@ -562,7 +579,11 @@ FMT_VARIADIC_W(std::wstring, sprintf, WCStringRef)
   \endrst
  */
 FMT_API int fprintf(std::FILE *f, CStringRef format, ArgList args);
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(int, fprintf, std::FILE *, CStringRef)
+#else
+FMT_VARIADIC4(int, fprintf, std::FILE*, CStringRef)
+#endif
 
 /**
   \rst
@@ -576,7 +597,11 @@ FMT_VARIADIC(int, fprintf, std::FILE *, CStringRef)
 inline int printf(CStringRef format, ArgList args) {
   return fmt::fprintf(stdout, format, args);
 }
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(int, printf, CStringRef)
+#else
+FMT_VARIADIC3(int, printf, CStringRef)
+#endif
 
 /**
   \rst
@@ -593,7 +618,11 @@ inline int fprintf(std::ostream &os, CStringRef format_str, ArgList args) {
   internal::write(os, w);
   return static_cast<int>(w.size());
 }
+#ifdef FMT_VARIADIC
 FMT_VARIADIC(int, fprintf, std::ostream &, CStringRef)
+#else
+FMT_VARIADIC4(int, fprintf, std::ostream&, CStringRef)
+#endif
 }  // namespace fmt
 
 #ifdef FMT_HEADER_ONLY

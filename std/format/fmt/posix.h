@@ -173,7 +173,11 @@ public:
   void print(CStringRef format_str, const ArgList &args) {
     fmt::print(file_, format_str, args);
   }
+#ifdef FMT_VARIADIC
   FMT_VARIADIC(void, print, CStringRef)
+#else
+  FMT_VARIADIC3(void, print, CStringRef)
+#endif
 };
 
 // A file. Closed file is represented by a File object with descriptor -1.
