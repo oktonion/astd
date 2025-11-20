@@ -3029,12 +3029,12 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
             }                                                                                      \
         };                                                                                         \
         template <typename... Rest>                                                                \
-        struct iter<std::tuple<doctest::detail::NullType, Rest...>>                                \
+        struct iter<std::tuple< doctest::detail::NullType, Rest...>>                                \
         {                                                                                          \
             iter(const char*, unsigned, int) {}                                                    \
         };                                                                                         \
         template <>                                                                                \
-        struct iter<std::tuple<doctest::detail::NullType>>                                         \
+        struct iter<std::tuple< doctest::detail::NullType>>                                         \
         {                                                                                          \
             iter(const char*, unsigned, int) {}                                                    \
         };                                                                                         \
@@ -3167,7 +3167,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
 
 
 #define DOCTEST_TEST_CASE_TEMPLATE(decorators, T, types)                                           \
-    DOCTEST_TEST_CASE_TEMPLATE_IMPL(decorators, T, doctest::detail::add_types<doctest::detail::remove_reference<types&>::type>::type, DOCTEST_ANONYMOUS(_DOCTEST_ANON_TMP_))
+    DOCTEST_TEST_CASE_TEMPLATE_IMPL(decorators, T, doctest::detail::add_types< doctest::detail::remove_reference<types&>::type>::type, DOCTEST_ANONYMOUS(_DOCTEST_ANON_TMP_))
 #endif // DOCTEST_CONFIG_WITH_VARIADIC_MACROS
 
 // for subcases
@@ -3264,7 +3264,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
         mb_name << expression;                                                                     \
         lambda_name.expr = s_name.str().c_str();                                                   \
     }                                                                                              \
-    doctest::detail::ContextScope<doctest::detail::ContextScopeLambda>                             \
+    doctest::detail::ContextScope< doctest::detail::ContextScopeLambda >                           \
     DOCTEST_ANONYMOUS(_DOCTEST_CAPTURE1_) = doctest::detail::MakeContextScope(lambda_name);        
 #endif // DOCTEST_PARTIAL_CPP11_COMPAT
 
@@ -3618,7 +3618,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
         doctest::detail::ResultBuilder DOCTEST_RB(doctest::assertType::assert_type, __FILE__,     \
                                                    __LINE__, #__VA_ARGS__);                        \
         DOCTEST_WRAP_IN_TRY(                                                                       \
-                DOCTEST_RB.binary_assert<doctest::detail::binaryAssertComparison::comp>(          \
+                DOCTEST_RB.binary_assert< doctest::detail::binaryAssertComparison::comp>(          \
                         __VA_ARGS__))                                                              \
         DOCTEST_ASSERT_LOG_AND_REACT(DOCTEST_RB);                                                 \
     } while((void)0, 0)
@@ -3636,7 +3636,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
         doctest::detail::ResultBuilder DOCTEST_RB(doctest::assertType::assert_type,       \
                                                    __FILE__, __LINE__, #lhs ", " #rhs);            \
         DOCTEST_WRAP_IN_TRY(                                                                       \
-                DOCTEST_RB.binary_assert<doctest::detail::binaryAssertComparison::comp>(lhs,      \
+                DOCTEST_RB.binary_assert< doctest::detail::binaryAssertComparison::comp>(lhs,      \
                                                                                          rhs))     \
         DOCTEST_ASSERT_LOG_AND_REACT(DOCTEST_RB);                                                 \
     } while((void)0, 0)
@@ -3653,7 +3653,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
 
 #ifdef DOCTEST_CONFIG_WITH_VARIADIC_MACROS
 #define DOCTEST_BINARY_ASSERT(assert_type, comparison, ...)                                        \
-    doctest::detail::binary_assert<doctest::detail::binaryAssertComparison::comparison>(           \
+    doctest::detail::binary_assert< doctest::detail::binaryAssertComparison::comparison>(           \
             doctest::assertType::assert_type, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__)
 
 #define DOCTEST_UNARY_ASSERT(assert_type, ...)                                                     \
@@ -3662,7 +3662,7 @@ namespace doctest { namespace detail { bool return_false() { return false; } } }
 
 #else //DOCTEST_CONFIG_WITH_VARIADIC_MACROS
 #define DOCTEST_BINARY_ASSERT(assert_type, lhs, rhs, comparison)                              \
-    doctest::detail::binary_assert<doctest::detail::binaryAssertComparison::comparison>(      \
+    doctest::detail::binary_assert< doctest::detail::binaryAssertComparison::comparison>(      \
             doctest::assertType::assert_type, __FILE__, __LINE__, #lhs ", " #rhs, lhs,     \
             rhs)
 #define DOCTEST_UNARY_ASSERT(assert_type, expr)                                               \
@@ -8373,7 +8373,7 @@ namespace doctest {
         }
 
         std::vector<const TestCase*> testArray;
-        for (std::set<doctest::detail::TestCase>::iterator it = getRegisteredTests().begin(); it != getRegisteredTests().end(); ++it)
+        for (std::set< doctest::detail::TestCase>::iterator it = getRegisteredTests().begin(); it != getRegisteredTests().end(); ++it)
             testArray.push_back(&(*it));
         p->numTestCases = testArray.size();
 
