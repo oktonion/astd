@@ -36,6 +36,7 @@
 *.exe
 *.out
 *.app
+tests/bin/*
 
 # debug information files
 *.dwo
@@ -45,3 +46,4 @@ std/out/*
 CMakeSettings.json
 *.exp
 *.exp
+*.tds
