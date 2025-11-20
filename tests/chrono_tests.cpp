@@ -35,6 +35,11 @@
 SERVICE_FILE_TRANSLATION_YYMMDD_DATE(TRANSLATION_YYMMDD_DATE);
 SERVICE_FILE_TRANSLATION_HHMMSS_TIME(TRANSLATION_HHMMSS_TIME);
 
+#ifdef __BORLANDC__
+#   define doctest ::doctest
+#   define testsuite ::testsuite
+#endif
+
 namespace {
     struct TestCase {
         testsuite::AngelScript::asIScriptContext* script_context;
@@ -46,10 +51,11 @@ namespace {
             REQUIRE(script_context);
             testsuite::AngelScript::asIScriptContext& script_context = *this->script_context;
 
+            SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
+
             SUBCASE("importing function 'int chrono_test()'")
             {
                 
-                SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
 
                 CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
                 CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
@@ -58,7 +64,6 @@ namespace {
             SUBCASE("importing function 'int chrono_test()'")
             {
 
-                SERVICE_IMPORT_FUNCTION(chrono_test, script_path, "int chrono_test()");
 
                 CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_test));
                 CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute());
@@ -136,10 +141,10 @@ TEST_CASE_FIXTURE(TestCase, "astd: chrono: script.as")
 
     CheckSubcases(EngineRAII, script_path);
 
+    SERVICE_IMPORT_FUNCTION(chrono_and_print_test, script_path, "int chrono_and_print_test()");
+
     SUBCASE("importing function 'int chrono_and_print_test()'")
     {
-
-        SERVICE_IMPORT_FUNCTION(chrono_and_print_test, script_path, "int chrono_and_print_test()");
 
         CHECK(static_cast<int>(asSUCCESS) == script_context.Prepare(chrono_and_print_test));
         CHECK(static_cast<int>(asEXECUTION_FINISHED) == script_context.Execute()); 

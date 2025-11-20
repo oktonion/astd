@@ -26,6 +26,14 @@ namespace astd {
     typedef asQWORD  asUINTMAX;
 
     struct ratio {
+#       if defined(LLONG_MAX) || defined(LLONG_MIN) || defined(ULLONG_MAX)
+        typedef asINT64 intmax_t;
+        typedef asUINTMAX uintmax_t;
+#       else
+        typedef long intmax_t;
+        typedef unsigned long uintmax_t;
+#       endif
+
         const asINTMAX& num() const { return internal_num; };
         const asINTMAX& den() const { return internal_den; };
 
@@ -64,7 +72,7 @@ namespace astd {
         asINTMAX internal_num, internal_den;
     };
 
-    template<asINTMAX Num = 1, asINTMAX Den = 1>
+    template<ratio::intmax_t Num = 1, ratio::intmax_t Den = 1>
     struct ratio_ct
         : ratio
     {
@@ -81,13 +89,13 @@ namespace astd {
         template<bool>
         struct detail_10_pow_01
         {
-            static const asUINTMAX value = static_cast<asUINTMAX>(10);
+            static const ratio::intmax_t value = static_cast<ratio::intmax_t>(10);
         };
 
         template<>
         struct detail_10_pow_01<true>
         {
-            static const asUINTMAX value = static_cast<asUINTMAX>(1);
+            static const ratio::uintmax_t value = static_cast<ratio::uintmax_t>(1);
         };
 
         enum {
@@ -104,7 +112,7 @@ namespace astd {
         };
 
         #define ASTD_10_POW(cond) detail_10_pow_01<(cond)>::value
-        #define ASTD_INTMAX_BIT_COUNT (sizeof(asINTMAX) * CHAR_BIT)
+        #define ASTD_INTMAX_BIT_COUNT (sizeof(ratio_ct<>::intmax_t) * CHAR_BIT)
         #define ASTD_10_POW_IMPL(pow_n) ASTD_10_POW(detail_10_pow_##pow_n##_bit_n > ASTD_INTMAX_BIT_COUNT)
         #define ASTD_10_POW_01_IMPL(pow_n) (ASTD_10_POW_IMPL(pow_n))
         #define ASTD_10_POW_02_IMPL(pow_n) (ASTD_10_POW_01_IMPL(pow_n) * ASTD_10_POW_01_IMPL(pow_n))

@@ -83,7 +83,7 @@ namespace astd {
 
             char buf[1024] = { 0 };
             {using namespace std; func_call(sprintf)(buf, "%d", i); }
-            return buf;
+            return std::string(buf);
         }
     public:
 
@@ -345,7 +345,7 @@ namespace astd {
 
             static void Destruct(Type* memory)
             {
-                if (memory) memory->~Type();
+                if (memory) static_cast<const LegacyInputIterator*>(memory)->~LegacyInputIterator();
             }
 
             static bool InstatiateTemplate(asITypeInfo* type_info, bool& dontGarbageCollect)
@@ -527,7 +527,7 @@ namespace astd {
 
             static void Destruct(Type* memory)
             {
-                if (memory) memory->~Type();
+                if (memory) static_cast<const LegacyOutputIterator*>(memory)->~LegacyOutputIterator();
             }
 
             static bool InstatiateTemplate(asITypeInfo* type_info, bool& dontGarbageCollect)

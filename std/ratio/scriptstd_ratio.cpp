@@ -96,7 +96,7 @@ namespace astd_script {
                 };
                 static void ctor(asITypeInfo& type_info, astd::ratio& that) { new(&that) astd::ratio(1,1); }
                 static void copy_ctor(asITypeInfo& type_info, const astd::ratio& other, astd::ratio& that) { new(&that) astd::ratio(other); }
-                static void dtor(astd::ratio& that) { that.~ratio(); }
+                static void dtor(astd::ratio& that) { that.astd::ratio::~ratio(); }
             };
 
             r = engine->RegisterObjectType(

@@ -6,6 +6,8 @@
 #include <string>
 #include <cstring>
 #include <map>
+#include <exception>
+#include <stdexcept>
 
 
 BEGIN_AS_NAMESPACE
@@ -47,7 +49,9 @@ namespace astd {
         };
 
         template<class T>
-        static bool register_behaviours(asIScriptEngine& engine, const char *type_cstr = T::meta::type_cstr()) throw()
+        static bool register_behaviours(asIScriptEngine& engine) { return register_behaviours<T>(engine, T::meta::type_cstr()); }
+        template<class T>
+        static bool register_behaviours(asIScriptEngine& engine, const char *type_cstr) throw()
         {
             typedef T type;
             int r = 0;
@@ -160,7 +164,7 @@ namespace astd {
             void* objectRegister;
             asITypeInfo* objectRegisterType;
         } state_reg[stack_size];
-        struct var {
+        struct var_t {
             const char* name;
             int typeId;
             asETypeModifiers typeModifiers;
@@ -169,10 +173,13 @@ namespace astd {
             void* address;
         };
         struct {
-
-            std::map<int, var> info;
+            std::map<int, var_t> info;
             int count() const { return static_cast<int>(info.size()); }
-            const var& operator[](std::size_t i) const { return info.at(i); }
+            const var_t& operator[](std::size_t i) const {
+                std::map<int, var_t>::const_iterator it = info.find(i); 
+                if (info.end() == it) throw(std::runtime_error("invalid map<K, T> key"));
+                return it->second; 
+            }
         } var[stack_size];
 
         void* this_pointer[stack_size];
@@ -360,9 +367,11 @@ namespace astd {
 
         awaitable_interface(asITypeInfo& type_info)
             : gc_reference(type_info) {}
-        
+
         template<class T>
-        static bool register_methods(asIScriptEngine& engine, const char *type_cstr = T::meta::type_cstr()) throw()
+        static bool register_methods(asIScriptEngine& engine) throw() { return register_methods<T>(engine, T::meta::type_cstr()); }
+        template<class T>
+        static bool register_methods(asIScriptEngine& engine, const char *type_cstr) throw()
         {
             typedef T type;
             int r = 0;
@@ -539,7 +548,7 @@ namespace astd {
         assert(context.GetEngine() != NULL);
         asIScriptEngine& engine = *context.GetEngine();
         
-        awaitable* result = awaitable::create(milliSeconds, engine);
+        awaitable* result = async_wait_for_awaitable::create(milliSeconds, engine);
         if (!result)
         {
             context.SetException("cannot instatiate async_wait_for awaitable");
@@ -642,8 +651,8 @@ namespace astd {
     }
 }
 
-namespace astd_script { namespace {
-    using namespace astd;
+namespace astd_script {
+    using namespace astd; namespace {
     namespace {
         template<int N>
         struct RegisterScriptStdFunctionHelperN {

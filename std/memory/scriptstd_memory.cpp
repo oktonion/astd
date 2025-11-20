@@ -333,8 +333,10 @@ namespace astd {
 
 }
 
-namespace astd_script { namespace {
-    using namespace astd;
+
+namespace astd_script {
+    using namespace astd; namespace {
+    
 
     template<int N>
     struct RegisterScriptStdFunctionHelperN {
@@ -352,14 +354,15 @@ namespace astd_script { namespace {
         }
     };
 
-#   define RegisterScriptStdFunction \
+#   define RegisterScriptStdFunction(N) \
         template<> struct RegisterScriptStdFunctionHelperN<N> \
         { static void call(asIScriptEngine * engine); static void call_next(asIScriptEngine * engine) { call(engine); RegisterScriptStdFunctionHelper<N+1>::call(engine); } }; void RegisterScriptStdFunctionHelperN<N>::call
     
+    enum {
+        sizeof_impl, unsafe_impl, addressof_impl
+    };
 
-#   define N 0
-    RegisterScriptStdFunction(asIScriptEngine* engine)
-#   undef N
+    RegisterScriptStdFunction(sizeof_impl)(asIScriptEngine* engine)
     {
         int r = 0;
         std::string ns = engine->GetDefaultNamespace(); if (!ns.empty()) ns += "::";
@@ -374,9 +377,8 @@ namespace astd_script { namespace {
 
         r = engine->SetDefaultNamespace(ns.c_str()); assert(r >= 0);
     }
-#   define N 1
-    RegisterScriptStdFunction(asIScriptEngine* engine)
-#   undef N
+
+    RegisterScriptStdFunction(unsafe_impl)(asIScriptEngine* engine)
     {
         int r = 0; 
         std::string ns = engine->GetDefaultNamespace(); if (!ns.empty()) ns += "::";
@@ -403,9 +405,7 @@ namespace astd_script { namespace {
         r = engine->SetDefaultNamespace(ns.c_str()); assert(r >= 0);
     }
 
-#   define N 2
-    RegisterScriptStdFunction(asIScriptEngine* engine)
-#   undef N
+    RegisterScriptStdFunction(addressof_impl)(asIScriptEngine* engine)
     {
         int r = 0;
 
@@ -448,7 +448,7 @@ int RegisterScriptStd_Memory_Native(asIScriptEngine *engine)
                 new(memory) astd::ptr(reference, typeinfo);
             }
             static void dtor(astd::ptr* object) {
-                object->~ptr();
+                object->astd::ptr::~ptr();
             }
 
             static astd::ptr& opAssign(astd::ptr* that, const astd::ptr& other)
@@ -621,11 +621,11 @@ int RegisterScriptStd_Memory_Native(asIScriptEngine *engine)
 
     r = engine->SetDefaultNamespace("std"); assert(r >= 0); if (r < 0) return r;
 
-    astd_script::RegisterScriptStdFunctions(engine);
+    //astd_script::RegisterScriptStdFunctions(engine);
 
     r = engine->SetDefaultNamespace(""); assert(r >= 0); if (r < 0) return r;
 
-    astd_script::RegisterScriptStdFunctions(engine);
+    //astd_script::RegisterScriptStdFunctions(engine);
 
     r = engine->SetDefaultNamespace(ns.c_str()); assert(r >= 0); if (r < 0) return r;
 

@@ -161,7 +161,7 @@ namespace astd {
             {
                 const astd::ratio cf =
                     astd::detail::ratio_divide(from.ratio, to_ratio);
-                return duration(to_ratio, from.ticks_number * cf.num() / cf.den());
+                return duration<RepT>(to_ratio, from.ticks_number * cf.num() / cf.den());
             }
 
             static duration& cast(const duration& from, duration& to)
@@ -178,7 +178,7 @@ namespace astd {
             }
 
             static duration zero() {
-                return duration(period(1,1));
+                return duration<RepT>(period(1,1));
             }
 
             typedef RepT rep;
@@ -280,7 +280,7 @@ namespace astd {
                     new(&that) duration(cast(other, ratio));
             }
 
-            static void dtor(duration& that) { that.~duration(); }
+            static void dtor(duration& that) { that.duration::~duration(); }
 
             duration& operator=(const duration& other) {
                 return cast(other, *this);
@@ -310,15 +310,15 @@ namespace astd {
 
             duration operator+(const duration& other) const {
                 return (other.ratio == ratio ? 
-                    duration(ratio, ticks_number + other.ticks_number) :
-                    duration(ratio, ticks_number + cast(other, ratio).ticks_number)
+                    duration<RepT>(ratio, ticks_number + other.ticks_number) :
+                    duration<RepT>(ratio, ticks_number + cast(other, ratio).ticks_number)
                     );
             }
 
             duration operator-(const duration& other) const {
                 return (other.ratio == ratio ?
-                    duration(ratio, ticks_number - other.ticks_number) :
-                    duration(ratio, ticks_number - cast(other, ratio).ticks_number)
+                    duration<RepT>(ratio, ticks_number - other.ticks_number) :
+                    duration<RepT>(ratio, ticks_number - cast(other, ratio).ticks_number)
                     );
             }
 
@@ -336,7 +336,7 @@ namespace astd {
 
             duration operator-() const {
                 
-                return duration(-ratio, ticks_number);
+                return duration<RepT>(-ratio, ticks_number);
             }
 
             duration operator+() const {
@@ -348,7 +348,7 @@ namespace astd {
             }
 
             duration operator++(int) {
-                return duration(ratio, ticks_number++);
+                return duration<RepT>(ratio, ticks_number++);
             }
 
             duration& operator--() {
@@ -356,10 +356,10 @@ namespace astd {
             }
 
             duration operator--(int) {
-                return duration(ratio, ticks_number--);
+                return duration<RepT>(ratio, ticks_number--);
             }
 
-            template<class DurationT>
+            template<class MetaT>
             static bool register_methods(asIScriptEngine& engine, const namespace_cstr& duration_tmpl_ns, const type_cstr& type_name)
             {
                 const char* type_cstr = type_name.cstr;
@@ -367,7 +367,7 @@ namespace astd {
                 char buffer[1024] = { 0 };
                 using namespace std;
                 typedef duration type;
-                typedef typename DurationT::meta meta;
+                typedef MetaT meta;
                 if (meta::count_cstr())
                 r = engine.RegisterObjectMethod(
                     type_cstr,
@@ -483,9 +483,13 @@ namespace astd {
                 return true;
             }
 
+            static bool register_methods(asIScriptEngine& engine,
+                const namespace_cstr& duration_tmpl_ns
+            )
+            { return register_methods<duration::meta>(engine, duration_tmpl_ns, static_cast<type_cstr>(duration::meta::type_cstr())); }
             static bool register_methods(asIScriptEngine& engine, 
                 const namespace_cstr& duration_tmpl_ns, 
-                const type_cstr& type_name = static_cast<type_cstr>(duration::meta::type_cstr())
+                const type_cstr& type_name, int = 0
             )
             {
                 return register_methods<duration>(engine, duration_tmpl_ns, type_name);
@@ -529,7 +533,7 @@ namespace astd {
         protected:
             rep ticks_number;
             period ratio;
-            
+
             struct internal {
                 inline
                 static const period& ratio(const duration& that) throw() {
@@ -545,6 +549,7 @@ namespace astd {
                     return asOFFSET(duration, ratio);
                 }
             };
+            friend struct internal;
         };
 
         struct generic_clock {
@@ -580,8 +585,8 @@ namespace astd {
             typedef ClockT clock;
             typedef DurationT duration;
 
-            typedef typename duration::rep rep;
-            typedef typename duration::period period;
+            typedef typename DurationT::rep rep;
+            typedef typename DurationT::period period;
 
             time_point(duration ticks_since_epoch = duration::zero())
                 : ticks_since_epoch(ticks_since_epoch) {}
@@ -622,7 +627,7 @@ namespace astd {
                 new(&that) time_point(other);
             }
 
-            static void dtor(time_point& that) { that.~time_point(); }
+            static void dtor(time_point& that) { that.time_point::~time_point(); }
 
             static time_point& assign(const time_point& other, time_point& that) {
                 that.ticks_since_epoch = other.ticks_since_epoch;
@@ -820,7 +825,7 @@ namespace astd {
                 new(&that) duration_ct(other);
             }
 
-            static void dtor(duration_ct& that) { that.~duration_ct(); }
+            static void dtor(duration_ct& that) { that.duration_ct::~duration_ct(); }
 
             static duration_type* duration_cast(duration_ct& that) {
                 return &that;
@@ -833,7 +838,7 @@ namespace astd {
                 typedef duration_ct type;
                 int r = 0;
 
-                if (!duration_type::register_methods<type>(engine, duration_tmpl_ns, type_name)) return false;
+                if (!duration_type::register_methods<type::meta>(engine, duration_tmpl_ns, type_name)) return false;
 
                 // registering object relation functions (casting, inheritance etc.)
                 {                    
@@ -1085,7 +1090,7 @@ namespace astd {
 
             typedef duration_ct<Ratio> duration;
 
-            time_point_ct(duration ticks_since_epoch = duration::zero())
+            time_point_ct(duration ticks_since_epoch = time_point_ct::duration::zero())
                 : time_point_type(ticks_since_epoch)
             {}
             time_point_ct(const time_point_type &other)
@@ -1108,7 +1113,7 @@ namespace astd {
                 new(&that) time_point_ct(other);
             }
 
-            static void dtor(time_point_ct& that) { that.~time_point_ct(); }
+            static void dtor(time_point_ct& that) { that.time_point_ct::~time_point_ct(); }
 
             static time_point_type* time_point_cast(time_point_ct& that) {
                 return &that;
@@ -1249,32 +1254,81 @@ namespace astd {
                 return true;
             }
         };
+        template<class DurationCastT, class RepT>
+        static bool duration_register_methods(asIScriptEngine& engine, const namespace_cstr& ns_name, const type_cstr& func_name)
+        {
+            return duration<RepT>::template register_methods<DurationCastT>(engine, ns_name, func_name);
+        }
+
+        template<class RepT>
+        struct duration_cast;
+
+        template<class DurationCastT, class RepT>
+        bool duration_cast_register_methods(asIScriptEngine& engine,
+            const namespace_cstr& ns_name,
+            const type_cstr& func_name,
+            const subtype_cstr& subtype_name
+        )
+        {
+            typedef typename DurationCastT::meta meta;
+            struct type {
+                static duration<RepT>& result(duration_cast<RepT>& that) {
+                    return that;
+                }
+            };
+            int r = 0;
+            const char* func_cstr = func_name.cstr;
+            const char* subtype_cstr = subtype_name.cstr;
+            char buffer[1024] = { 0 };
+            using namespace std;
+
+            r = engine.RegisterObjectMethod(
+                func_cstr,
+                (sprintf(buffer, meta().result_cstr(), subtype_cstr), buffer),
+                asFUNCTION(type::result),
+                asCALL_CDECL_OBJLAST
+            ); if (r < 0) return false;
+            
+            r = engine.RegisterObjectMethod(
+                func_cstr,
+                (sprintf(buffer, meta().result_const_cstr(), subtype_cstr), buffer),
+                asFUNCTION(type::result),
+                asCALL_CDECL_OBJLAST
+            ); if (r < 0) return false;
+
+            return astd::chrono::duration_register_methods<meta, RepT>(engine,
+                ns_name,
+                func_name
+                );
+        }
+        
+        struct duration_cast_meta
+            : duration<int>::meta
+        {
+#           define TYPE_NAME "%s"
+#           define NS_NAME "%s"
+            static const char* func_cstr() throw() { return "duration_cast<T>"; }
+            static const char* ctor_cstr() throw() { return "void call(int&in)"; }
+            static const char* call_cstr() throw() { return "void call(int&in, const " NS_NAME "duration<void, void> &in, const " TYPE_NAME "&out=void)"; }
+            static const char* copy_ctor_cstr() throw() { return "void cctor(int&in, const duration_cast<" TYPE_NAME "> &in)"; }
+            static const char* end_cstr() throw() { return "void end()"; }
+            static const char* template_callback_cstr() throw() { return "bool template_callback(int&in, bool&out)"; }
+
+            static const char* count_cstr() throw() { return 0; }
+
+            static const char* result_cstr() throw() { return TYPE_NAME "& opImplCast()"; }
+            static const char* result_const_cstr() throw() { return "const " TYPE_NAME "& opImplCast() const"; }
+#           undef TYPE_NAME
+#           undef NS_NAME
+        };
 
         template<class RepT>
         struct duration_cast
             : duration<RepT>
         {
             typedef duration<RepT> duration_type;
-
-            struct meta
-                : duration_type::meta
-            {
-#               define TYPE_NAME "%s"
-#               define NS_NAME "%s"
-                static const char* func_cstr() throw() { return "duration_cast<T>"; }
-                static const char* ctor_cstr() throw() { return "void call(int&in)"; }
-                static const char* call_cstr() throw() { return "void call(int&in, const " NS_NAME "duration<void, void> &in, const " TYPE_NAME "&out=void)"; }
-                static const char* copy_ctor_cstr() throw() { return "void cctor(int&in, const duration_cast<" TYPE_NAME "> &in)"; }
-                static const char* end_cstr() throw() { return "void end()"; }
-                static const char* template_callback_cstr() throw() { return "bool template_callback(int&in, bool&out)"; }
-
-                static const char* count_cstr() throw() { return 0; }
-
-                static const char* result_cstr() throw() { return TYPE_NAME "& opImplCast()"; }
-                static const char* result_const_cstr() throw() { return "const " TYPE_NAME "& opImplCast() const"; }
-#               undef TYPE_NAME
-#               undef NS_NAME
-            };
+            typedef duration_cast_meta meta;
+            
             static void ctor(asITypeInfo&, duration_cast& that)
             {
                 new (&that) duration_cast(duration_type::zero());
@@ -1293,11 +1347,9 @@ namespace astd {
                 new (&that) duration_cast(other);
             }
             static void end(duration_cast& that) {
-                that.~duration_cast();
+                that.astd::chrono::duration_cast<RepT>::~duration_cast();
             }
-            static duration_type& result(duration_cast& that) {
-                return that;
-            }
+
             static bool template_callback(asITypeInfo& type_info, bool& dont_GC) {
                 if (!type_info.GetSubType()) return false;
                 enum { DurationT };
@@ -1440,11 +1492,13 @@ namespace astd {
                     if (!registering_generic_duration_interface)
                     {
                         registering_generic_duration_interface = true;
-
+                        typedef duration_cast duration_cast_type;
                         struct duration_cast_ct
                             : duration_cast
                         {
-                            struct meta : duration_cast::meta {
+                            typedef duration_cast::meta duration_cast_meta;
+                            typedef duration_cast_type duration_cast_t;
+                            struct meta : duration_cast_meta {
 #                               define NS_NAME "%s"
 #                               define TYPE_NAME "%s"
                                 static const char* func_cstr() throw() { return "duration_cast<%s>"; }
@@ -1455,28 +1509,28 @@ namespace astd {
 #                               undef TYPE_NAME
                             };
 
-                            static void ctor(duration_cast& that)
+                            static void ctor(duration_cast_t& that)
                             {
-                                new (&that) duration_cast(duration_type::zero());
+                                new (&that) duration_cast_t(duration_type::zero());
                             }
-                            static void call(const duration_type& in, const duration_type& out, duration_cast& that) {
+                            static void call(const duration_type& in, const duration_type& out, duration_cast_t& that) {
 
                                 const typename duration_type::period& out_ratio = duration_type::internal::ratio(out);
                                 const typename duration_type::period& in_ratio = duration_type::internal::ratio(in);
 
-                                new (&that) duration_cast(
+                                new (&that) duration_cast_t(
                                     (0 == std::memcmp(&out_ratio, &in_ratio, sizeof(typename duration_type::period))) ? in : duration_type::cast(in, out_ratio)
                                 );
                             }
-                            static void copy_ctor(const duration_cast& other, duration_cast& that)
+                            static void copy_ctor(const duration_cast_t& other, duration_cast_t& that)
                             {
-                                new (&that) duration_cast(other);
+                                new (&that) duration_cast_t(other);
                             }
 
 
                             static bool register_behaviours(asIScriptEngine& engine,
                                 const namespace_cstr& ns_name,
-                                const type_cstr& func_name = static_cast<type_cstr>(duration_cast::meta::func_cstr()),
+                                const type_cstr& func_name = static_cast<type_cstr>(duration_cast_t::meta::func_cstr()),
                                 const subtype_cstr& subtype_name = static_cast<subtype_cstr>("T")
                             )
                             {
@@ -1608,7 +1662,7 @@ namespace astd {
                 r = engine.RegisterObjectBehaviour(
                     func_cstr,
                     asBEHAVE_CONSTRUCT, 
-                    (sprintf(buffer, meta::copy_ctor_cstr(), subtype_cstr), buffer),
+                    (sprintf(buffer, meta().copy_ctor_cstr(), subtype_cstr), buffer),
                     asFUNCTION(type::copy_ctor),
                     asCALL_CDECL_OBJLAST
                 ); if (r < 0) return false;
@@ -1616,7 +1670,7 @@ namespace astd {
                 r = engine.RegisterObjectBehaviour(
                     func_cstr,
                     asBEHAVE_CONSTRUCT,
-                    (sprintf(buffer, meta::call_cstr(), namespace_cstr, subtype_cstr), buffer),
+                    (sprintf(buffer, meta().call_cstr(), namespace_cstr, subtype_cstr), buffer),
                     asFUNCTION(type::call),
                     asCALL_CDECL_OBJLAST
                 ); if (r < 0) return false;
@@ -1624,72 +1678,56 @@ namespace astd {
                 r = engine.RegisterObjectBehaviour(
                     func_cstr,
                     asBEHAVE_DESTRUCT,
-                    meta::end_cstr(),
+                    meta().end_cstr(),
                     asFUNCTION(type::end),
                     asCALL_CDECL_OBJLAST
                 ); if (r < 0) return false;
 
                 return true;
             }
-
+            static bool register_behaviours(asIScriptEngine& engine,
+                const namespace_cstr& ns_name
+            )
+            { return register_behaviours<duration_cast>(engine, ns_name, static_cast<type_cstr>(duration_cast_meta::func_cstr()), static_cast<subtype_cstr>("T")); }
+            static bool register_behaviours(asIScriptEngine& engine,
+                const namespace_cstr& ns_name,
+                const type_cstr& func_name
+            )
+            { return register_behaviours<duration_cast>(engine, ns_name, func_name, static_cast<subtype_cstr>("T")); }
             static bool register_behaviours(asIScriptEngine& engine, 
                 const namespace_cstr& ns_name,
-                const type_cstr& func_name = static_cast<type_cstr>(meta::func_cstr()), 
-                const subtype_cstr& subtype_name = static_cast<subtype_cstr>("T")
+                const type_cstr& func_name, 
+                const subtype_cstr& subtype_name, int = 0
             )
             {
                 return register_behaviours<duration_cast>(engine, ns_name, func_name, subtype_name);
             }
 
-            template<class DurationCastT>
-            static bool register_methods(asIScriptEngine& engine,
-                const namespace_cstr& ns_name = static_cast<namespace_cstr>(""),
-                const type_cstr& func_name = static_cast<type_cstr>(meta::func_cstr()),
-                const subtype_cstr& subtype_name = static_cast<subtype_cstr>("T")
+            static bool register_methods(asIScriptEngine& engine
+                , int = 0
             )
-            {
-                typedef duration_cast type;
-                typedef typename DurationCastT::meta meta;
-                int r = 0;
-                const char* func_cstr = func_name.cstr;
-                const char* subtype_cstr = subtype_name.cstr;
-                char buffer[1024] = { 0 };
-                using namespace std;
-
-                r = engine.RegisterObjectMethod(
-                    func_cstr,
-                    (sprintf(buffer, meta::result_cstr(), subtype_cstr), buffer),
-                    asFUNCTION(type::result),
-                    asCALL_CDECL_OBJLAST
-                ); if (r < 0) return false;
-
-                r = engine.RegisterObjectMethod(
-                    func_cstr,
-                    (sprintf(buffer, meta::result_const_cstr(), subtype_cstr), buffer),
-                    asFUNCTION(type::result),
-                    asCALL_CDECL_OBJLAST
-                ); if (r < 0) return false;
-
-                return duration_type::template register_methods<DurationCastT>(engine,
-                    ns_name,
-                    func_name
-                );
-            }
-
+            { return register_methods(engine, static_cast<namespace_cstr>("")); }
             static bool register_methods(asIScriptEngine& engine,
-                const namespace_cstr& ns_name = static_cast<namespace_cstr>(""),
-                const type_cstr& func_name = static_cast<type_cstr>(meta::func_cstr()),
-                const subtype_cstr& subtype_name = static_cast<subtype_cstr>("T")
+                const namespace_cstr& ns_name, int = 0
             )
-            {
-                return register_methods<duration_cast>(engine, ns_name, func_name, subtype_name);
-            }
+            { return register_methods(engine, ns_name, static_cast<type_cstr>(duration_cast_meta::func_cstr())); }
+            static bool register_methods(asIScriptEngine& engine,
+                const namespace_cstr& ns_name,
+                const type_cstr& func_name, int = 0
+            )
+            { return register_methods(engine, ns_name, func_name, static_cast<subtype_cstr>("T")); }
+            static bool register_methods(asIScriptEngine& engine,
+                const namespace_cstr& ns_name,
+                const type_cstr& func_name,
+                const subtype_cstr& subtype_name, int = 0
+            )
+            { return duration_cast_register_methods<duration_cast, RepT>(engine, ns_name, func_name, subtype_name); }
         };
 
         namespace os {
             typedef astd::os::get_time_callback (&get_time_callbacks)[astd::os::get_time_size];
             template<int>
-            static astd::os::get_time_callback(&get_time())[astd::os::get_time_size];
+            static get_time_callbacks get_time();
             template<>
             get_time_callbacks get_time<0>()
             {
@@ -1933,7 +1971,7 @@ namespace astd_script {
 
     template<class T, bool = chrono::type_traits::is_duration<T>::value>
     struct register_duration {
-        int call(asIScriptEngine&, const std::string&, const std::string&)
+        static int call(asIScriptEngine&, const std::string&, const std::string&, const std::string&)
         {
             return -1;
         }

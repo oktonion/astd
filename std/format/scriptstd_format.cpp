@@ -1,6 +1,7 @@
 
 #include "scriptstd_format.h"
 
+
 #include "./fmt/format.h"
 #include "./fmt/printf.h"
 
@@ -102,7 +103,6 @@ namespace fmt {
     template<int ARGS_NUMBER>
     std::string& format_args(const std::string& format_str, void* (&reference)[ARGS_NUMBER], asETypeIdFlags(&typeID)[ARGS_NUMBER], std::string& result)
     {
-        int i = 0;
         typedef ::fmt::internal::ArgArray<ARGS_NUMBER> ArgArray;
         typename ArgArray::Type array;
         uint64_t ArgArrayType = 0;
@@ -119,7 +119,6 @@ namespace fmt {
     template<int ARGS_NUMBER>
     int printf_args(const std::string& format_str, void* (&reference)[ARGS_NUMBER], asETypeIdFlags(&typeID)[ARGS_NUMBER], int &result)
     {
-        int i = 0;
         typedef ::fmt::internal::ArgArray<ARGS_NUMBER> ArgArray;
         typename ArgArray::Type array;
         uint64_t ArgArrayType = 0;
@@ -136,7 +135,6 @@ namespace fmt {
     template<int ARGS_NUMBER>
     int print_args(const std::string& format_str, void* (&reference)[ARGS_NUMBER], asETypeIdFlags(&typeID)[ARGS_NUMBER], int& result)
     {
-        int i = 0;
         typedef ::fmt::internal::ArgArray<ARGS_NUMBER> ArgArray;
         typename ArgArray::Type array;
         uint64_t ArgArrayType = 0;

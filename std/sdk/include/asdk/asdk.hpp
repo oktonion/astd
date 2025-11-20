@@ -769,7 +769,7 @@ namespace asdk {
             template<class Flags, class ClassT, class FuncT, class ReflectionT
                 , class DeclT = arg_type_ph(*)(arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph)>
             struct function {
-
+                typedef FuncT function_type;
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
@@ -1036,7 +1036,8 @@ namespace asdk {
                     void(*)(T&),
                     reflect::flags::is_template == bool(true)
                 >::type FuncT;
-                return constructor(static_cast<FuncT>(&ctor));
+                FuncT ctor_func = &ctor;
+                return constructor(ctor_func);
             }
 
             template<class Arg1T, class FuncT>
@@ -1067,7 +1068,8 @@ namespace asdk {
                     void(*)(T&, Arg1T),
                     flags::is_template == bool(true)
                 >::type FuncT;
-                return constructor<Arg1T>(arg1_str, static_cast<FuncT>(&ctor));
+                FuncT ctor_func = &ctor;
+                return constructor<Arg1T>(arg1_str, ctor_func);
             }
 
             template<class Arg1T, class Arg2T, class FuncT>
@@ -1107,21 +1109,35 @@ namespace asdk {
 
             template<class FuncT>
             typename type_traits::function<flags, T, FuncT, reflect&>::type
-            function(typename type_traits::function<flags, T, FuncT, const std::string&>::type func_str, FuncT func) {
+            function(typename type_traits::function<flags, T, FuncT,
+                typename type_traits::conditional<
+                    const std::string&,
+                    void, sizeof(FuncT) == sizeof(void*)
+                >::type
+            >::type func_str, FuncT func) {
                 typedef type_traits::function<flags, T, FuncT, reflect&> func_traits;
-                typedef typename func_traits::obj_type obj_type;
-                typedef typename func_traits::class_type class_type;
-                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
-                const asECallConvTypes asCALL = 
-                    type_traits::is_same<class_type, void>::value ? (
-                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
-                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
-                    asCALL_CDECL)
-                    : (
-                    asCALL_THISCALL);
-                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
-                return *this;
+                return function_with_traits<FuncT, func_traits, typename func_traits::class_type>(func_str, func);
+            }
+
+            template<class ReturnT, class ClassT>
+            reflect&
+            function(const std::string& func_str, ReturnT(ClassT::* func)()) {
+                typedef type_traits::function<flags, T, ReturnT(*)(), reflect&> func_traits;
+                return function_with_traits<func_traits, ClassT>(func_str, func);
+            }
+
+            template<class ReturnT, class ClassT>
+            reflect&
+            function(const std::string& func_str, ReturnT(ClassT::* func)() const) {
+                typedef type_traits::function<flags, T, ReturnT(*)(), reflect&> func_traits;
+                return function_with_traits<func_traits, ClassT>(func_str, func);
+            }
+
+            template<class ReturnT, class ClassT, class Arg0T>
+            reflect&
+            function(const std::string& func_str, ReturnT(ClassT::* func)(Arg0T)) {
+                typedef type_traits::function<flags, T, ReturnT(*)(Arg0T), reflect&> func_traits;
+                return function_with_traits<func_traits, ClassT>(func_str, func);
             }
 
             template<class FuncT>
@@ -1196,7 +1212,8 @@ namespace asdk {
             reflect&
             operator_assign(int(*)[sizeof((*(T*)(0)) = (*(const T*)(0)))] = 0)
             {
-                return operator_assign(static_cast<T(*)(T&, const T&)>(opAssign));
+                T(*op_func)(T&, const T&) = &opAssign;
+                return operator_assign(op_func);
             }
             
             template<class OtherT, class FuncT>
@@ -1232,7 +1249,8 @@ namespace asdk {
             reflect&
             operator_equal_to()
             {
-                return operator_equal_to(static_cast<bool(*)(const T&, const T&)>(opEquals), "const " + name + "&in");
+                bool(*op_func)(const T&, const T&) = &opEquals;
+                return operator_equal_to(op_func, "const " + name + "&in");
             }
 
             template<class OtherT>
@@ -1240,7 +1258,8 @@ namespace asdk {
             operator_equal_to(const std::string& other_str
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(( (static_cast<T>(*(T*)(0))) == (static_cast<OtherT>(*(OtherT*)(0))) )))
             {
-                return operator_equal_to(static_cast<bool(*)(const T&, const OtherT&)>(opEquals), other_str);
+                bool(*op_func)(const T&, const OtherT&) = &opEquals;
+                return operator_equal_to(op_func, other_str);
             }
 
             template<class OtherT>
@@ -1283,7 +1302,8 @@ namespace asdk {
             reflect&
             operator_compare()
             {
-                return operator_compare(static_cast<int(*)(const T&, const T&)>(opCmp), "const " + name + "&in");
+                int(*op_func)(const T&, const T&) = &opCmp;
+                return operator_compare(op_func, "const " + name + "&in");
             }
 
             template<class OtherT>
@@ -1296,7 +1316,8 @@ namespace asdk {
                     sizeof (static_cast<T>(*(T*)(0)) > static_cast<OtherT>(*(OtherT*)(0)))
                 ))
             {
-                return operator_compare(static_cast<int(*)(const T&, const OtherT&)>(opCmp), other_str);
+                int(*op_func)(const T&, const OtherT&) = opCmp;
+                return operator_compare(op_func, other_str);
             }
 
 #           ifndef BINARY_OPERATOR_DEF
@@ -1343,7 +1364,7 @@ namespace asdk {
             reflect&                                                                                                                               \
             operator_()                                                                                                                            \
             {                                                                                                                                      \
-                return operator_(static_cast<T(*)(const T&, const T&)>(opName), "const " + name + "&in");                                          \
+                T(*op_func)(const T&, const T&) = &opName; return operator_(op_func, "const " + name + "&in");                                     \
             }                                                                                                                                      \
                                                                                                                                                    \
             template<class OtherT>                                                                                                                 \
@@ -1351,7 +1372,7 @@ namespace asdk {
             operator_(const std::string &other_str                                                                                                 \
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof(static_cast<T>(*(T*)(0)) opSym static_cast<OtherT>(*(OtherT*)(0))) ))                   \
             {                                                                                                                                      \
-                return operator_(static_cast<T(*)(const T&, OtherT)>(opName), other_str);                                                          \
+                T(*op_func)(const T&, OtherT) = &opName; return operator_(op_func, other_str);                                                     \
             }                                                                                                                                      \
                                                                                                                                                    \
             reflect&                                                                                                                               \
@@ -1394,7 +1415,7 @@ namespace asdk {
             operator_(typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type return_str              \
                 , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT, ThisT)>::type other_str)                  \
             {                                                                                                                                      \
-                return operator_(static_cast<ReturnT(*)(const OtherT&, const ThisT&)>(opName), return_str, other_str);                             \
+                ReturnT(*op_func)(const OtherT&, const ThisT&) = &opName; return operator_(op_func, return_str, other_str);                        \
             }                                                                                                                                      \
                                                                                                                                                    \
             template<class OtherT, class ThisT>                                                                                                    \
@@ -1402,7 +1423,7 @@ namespace asdk {
             operator_(const std::string& other_str                                                                                                 \
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG((static_cast<OtherT>(*(OtherT*)(0)) opSym static_cast<ThisT>(*(ThisT*)(0)))))                   \
             {                                                                                                                                      \
-                return operator_<T, const OtherT&, const ThisT&>(static_cast<T(*)(const OtherT&, const ThisT&)>(opName), name, other_str);         \
+                T(*op_func)(const OtherT&, const ThisT&) = &opName; return operator_<T, const OtherT&, const ThisT&>(op_func, name, other_str);    \
             }                                                                                                                                      \
                                                                                                                                                    \
             template<class OtherT, class ThisT>                                                                                                    \
@@ -1459,7 +1480,7 @@ namespace asdk {
             reflect&                                                                                                                                   \
             operator_()                                                                                                                                \
             {                                                                                                                                          \
-                return operator_(static_cast<T&(*)(T&, const T&)>(opName), "const " + name + "&in");                                                   \
+                T&(*op_func)(T&, const T&) = &opName; return operator_(op_func, "const " + name + "&in");                                              \
             }                                                                                                                                          \
                                                                                                                                                        \
             template<class OtherT>                                                                                                                     \
@@ -1467,7 +1488,7 @@ namespace asdk {
             operator_(const std::string &other_str                                                                                                     \
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof(static_cast<T>(*(T*)(0)) += static_cast<OtherT>(*(OtherT*)(0))) ))                          \
             {                                                                                                                                          \
-                return operator_(static_cast<T&(*)(T&, OtherT)>(opName), other_str);                                                                   \
+                T&(*op_func)(T&, OtherT) = &opName; return operator_(op_func, other_str);                                                              \
             }                                                                                                                                          \
                                                                                                                                                        \
             reflect&                                                                                                                                   \
@@ -1585,6 +1606,25 @@ namespace asdk {
                     asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
                 else
                     asdk::expose(*asIScriptEngine, name, sizeof(T), all_flags32);
+            }
+
+            template<class FuncTraits, class ClassT, class FuncT>
+            reflect&
+            function_with_traits(const std::string& func_str, FuncT func) {
+                typedef FuncTraits func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef ClassT class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL = 
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, func_str, asFunc, asCALL);
+                return *this;
             }
 
             template<class ThisT, class OtherT>
