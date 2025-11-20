@@ -80,7 +80,7 @@
 
 #define SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(name) \
             static void name(const ANGELSCRIPT_NS_QUALIFIER asSMessageInfo* asSMessageInfo, void*)                                                                                     \
-            {   ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext = asGetActiveContext();                                                                                    \
+            {   ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext = ANGELSCRIPT_NS_QUALIFIER asGetActiveContext();                                                           \
                 if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_WARNING == asSMessageInfo->type)                                                                                                \
                 {                                                                                                                                                                      \
                     DOCTEST_WARN_MESSAGE(asSMessageInfo, asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);  \
@@ -137,6 +137,7 @@ namespace testsuite {
         using ANGELSCRIPT_NS_QUALIFIER asIScriptFunction;
         using ANGELSCRIPT_NS_QUALIFIER asCScriptFunction;
         using ANGELSCRIPT_NS_QUALIFIER asCArray;
+        using ANGELSCRIPT_NS_QUALIFIER asIScriptModule;
 
         using ANGELSCRIPT_NS_QUALIFIER asCreateScriptEngine;
 
@@ -327,12 +328,12 @@ namespace testsuite {
             struct MessageCallbackRAII {                                                                                                                                                \
                 typedef testsuite::IEngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                     \
                 MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
-                    if (EngineRAII() == &EngineRAII_t::MessageCallback) { EngineRAII(&MessageCallbackRAII::MessageCallback); }                                                          \
+                    if (EngineRAII() == &testsuite::IEngineRAII::MessageCallback) { EngineRAII(&MessageCallback); }                                                                     \
                 }                                                                                                                                                                       \
                 ~MessageCallbackRAII() {                                                                                                                                                \
-                    if (EngineRAII() == &MessageCallbackRAII::MessageCallback) { EngineRAII(&EngineRAII_t::MessageCallback); }                                                          \
+                    if (EngineRAII() == &MessageCallback) { EngineRAII(&testsuite::IEngineRAII::MessageCallback); }                                                                     \
                 }                                                                                                                                                                       \
-            } MessageCallbackRAII(EngineRAII); using namespace testsuite; asIScriptModule *asIScriptModule = 0;                                                                         \
+            } MessageCallbackRAII(EngineRAII); testsuite::AngelScript::asIScriptModule *asIScriptModule = 0;                                                                            \
             testsuite::AngelScript::CScriptBuilder CScriptBuilder; testsuite::AngelScript::asIScriptEngine *asIScriptEngine = &EngineRAII.engine;                                       \
             const std::string moduleName = module_cstr; const std::string decl = decl_cstr;                                                                                             \
             DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName); \
