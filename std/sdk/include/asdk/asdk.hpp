@@ -1486,7 +1486,7 @@ namespace asdk {
             template<class OtherT>                                                                                                                     \
             reflect&                                                                                                                                   \
             operator_(const std::string &other_str                                                                                                     \
-                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof(static_cast<T>(*(T*)(0)) += static_cast<OtherT>(*(OtherT*)(0))) ))                          \
+                , ASDK_SFINAE_DEFAULT_FUNCTION_ARG( sizeof(static_cast<T>(*(T*)(0)) opSym static_cast<OtherT>(*(OtherT*)(0))) ))                       \
             {                                                                                                                                          \
                 T&(*op_func)(T&, OtherT) = &opName; return operator_(op_func, other_str);                                                              \
             }                                                                                                                                          \
@@ -1501,7 +1501,7 @@ namespace asdk {
             reflect&                                                                                                                                   \
             operator opSym(                                                                                                                            \
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph                                                         \
-                , sizeof((T)(*((T*)(42))) += (OtherT)(*((OtherT*)(42)))) == sizeof(T)>::type other_str)                                                \
+                , sizeof((T)(*((T*)(42))) opSym (OtherT)(*((OtherT*)(42)))) == sizeof(T)>::type other_str)                                             \
             {                                                                                                                                          \
                 return operator_<OtherT>(other_str);                                                                                                   \
             }
