@@ -1036,7 +1036,7 @@ namespace asdk {
                     void(*)(T&),
                     reflect::flags::is_template == bool(true)
                 >::type FuncT;
-                FuncT ctor_func = &ctor;
+                FuncT ctor_func = &default_ctor;
                 return constructor(ctor_func);
             }
 
@@ -1752,11 +1752,11 @@ namespace asdk {
                 that.~T();
             }
 
-            inline static void ctor(T& that, asITypeInfo& ti) // objfirst
+            inline static void default_ctor(T& that, asITypeInfo& ti) // objfirst
             {
                 new (&that) T();
             }
-            inline static void ctor(T& that) // objfirst
+            inline static void default_ctor(T& that) // objfirst
             {
                 new (&that) T();
             }
