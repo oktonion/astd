@@ -1,4 +1,5 @@
 #include "service/testsuit.h"
+#include <iostream>
 
 #ifndef ASDK_H_PATH
 #   define ASDK_H_PATH <SERVICE_WRAP(ASTD_DIRECTORY)sdk/include/asdk/asdk.hpp>
@@ -805,26 +806,39 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_assign()
             .operator_equal_to<my_value_class>("const my_value_class<T> & in")
             .operator_compare()
-            .operator+<int>("int")
             .operator+<int, my_value_class>("int")
-            .operator-<int>("int")
             .operator-<int, my_value_class>("int")
-            .operator*<int>("int")
             .operator*<int, my_value_class>("int")
-            .operator/<int>("int")
             .operator/<int, my_value_class>("int")
-            .operator%<int>("int")
             .operator%<int, my_value_class>("int")
-            .operator&<int>("int")
             .operator&<int, my_value_class>("int")
+            .operator|<int, my_value_class>("int")
+#           ifdef __BORLANDC__ // borland is suprisingly really bad for detecting operator overloads with different template params
+            .operator_add<int>("int")
+            .operator_substract<int>("int")
+            .operator_multiply<int>("int")
+            .operator_divide<int>("int")
+            .operator_mod<int>("int")
+            .operator_and<int>("int")
+            .operator_or<int>("int")
+#           else
+            .operator+<int>("int")
+            .operator-<int>("int")
+            .operator*<int>("int")
+            .operator/<int>("int")
+            .operator%<int>("int")
+            .operator&<int>("int")
+            .operator|<int>("int")
+#            endif
             .operator+=<int>("int")
             .operator-=<int>("int")
             .operator*=<int>("int")
             .operator/=<int>("int")
             .operator%=<int>("int")
             .operator&=<int>("int")
+            .operator|=<int>("int")
             ;
-
+        
         SERVICE_IMPORT_FUNCTION(reflection_test, script_tmpl_path, "int asdk_exposing_and_reflection_test()");
 
         CHECK(static_cast<int>(asSUCCESS) == asIScriptContext.Prepare(reflection_test));
@@ -864,6 +878,7 @@ TEST_CASE("asdk: exposing and reflection")
             .operator_divide_assign<int>("int")
             .operator_mod_assign<int>("int")
             .operator_or_assign<int>("int")
+            .operator_and_assign<int>("int")
             ;
 
         SERVICE_IMPORT_FUNCTION(reflection_test, script_path, "int asdk_exposing_and_reflection_test()");
