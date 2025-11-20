@@ -1501,7 +1501,7 @@ namespace asdk {
             reflect&                                                                                                                                   \
             operator opSym(                                                                                                                            \
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph                                                         \
-                , sizeof((T)(*((T*)(42))) opSym (OtherT)(*((OtherT*)(42)))) == sizeof(T)>::type other_str)                                             \
+                , sizeof((T)(*((T*)(42))) opSym (OtherT)(*((OtherT*)(42)))) != sizeof_Tx2>::type other_str)                                            \
             {                                                                                                                                          \
                 return operator_<OtherT>(other_str);                                                                                                   \
             }
