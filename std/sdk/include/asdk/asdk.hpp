@@ -1435,6 +1435,12 @@ namespace asdk {
                 return operator_<OtherT, ThisT>(other_str);                                                                                        \
             }
 #           endif // BINARY_OPERATOR_DEF
+
+#           if (defined(__GNUC__) && __GNUC__ < 8)
+#           define ASDK_CONSTEXPR_BOOL_TMPL_ARG(expr) true
+#           else
+#           define ASDK_CONSTEXPR_BOOL_TMPL_ARG(expr) sizeof(expr) != sizeof_Tx2
+#           endif
             
 #           ifndef ASSIGNMENT_OPERATOR_DEF
 #           define ASSIGNMENT_OPERATOR_DEF(operator_, opName, opSym)                                                                                   \
@@ -1501,7 +1507,7 @@ namespace asdk {
             reflect&                                                                                                                                   \
             operator opSym(                                                                                                                            \
                 typename type_traits::conditional<const std::string&, type_traits::arg_type_ph                                                         \
-                , sizeof((T)(*((T*)(42))) opSym (OtherT)(*((OtherT*)(42)))) != sizeof_Tx2>::type other_str)                                            \
+                , ASDK_CONSTEXPR_BOOL_TMPL_ARG((T)(*((T*)(42))) opSym (OtherT)(*((OtherT*)(42))))>::type other_str)                                    \
             {                                                                                                                                          \
                 return operator_<OtherT>(other_str);                                                                                                   \
             }
@@ -1510,47 +1516,47 @@ namespace asdk {
             // operator+
             BINARY_OPERATOR_DEF(operator_add, opAdd, +)
 
-            // operator+=
-            ASSIGNMENT_OPERATOR_DEF(operator_add_assign, opAddAssign, +=)
-
             // operator-
             BINARY_OPERATOR_DEF(operator_substract, opSub, -)
-
-            // operator-=
-            ASSIGNMENT_OPERATOR_DEF(operator_substract_assign, opSubAssign, -=)
-
+                
             // operator*
             BINARY_OPERATOR_DEF(operator_multiply, opMul, *)
-
-            // operator*=
-            ASSIGNMENT_OPERATOR_DEF(operator_multiply_assign, opMulAssign, *=)
 
             // operator/
             BINARY_OPERATOR_DEF(operator_divide, opDiv, /)
 
-            // operator/=
-            ASSIGNMENT_OPERATOR_DEF(operator_divide_assign, opDivAssign, /=)
-
             // operator%
             BINARY_OPERATOR_DEF(operator_mod, opMod, %)
-
-            // operator%=
-            ASSIGNMENT_OPERATOR_DEF(operator_mod_assign, opModAssign, %=)
 
             // operator&
             BINARY_OPERATOR_DEF(operator_and, opAnd, &)
 
-            // operator&=
-            ASSIGNMENT_OPERATOR_DEF(operator_and_assign, opAndAssign, &=)
-
             // operator|
             BINARY_OPERATOR_DEF(operator_or, opOr, |)
+                
+            // operator+=
+            ASSIGNMENT_OPERATOR_DEF(operator_add_assign, opAddAssign, +=)
+
+            // operator-=
+            ASSIGNMENT_OPERATOR_DEF(operator_substract_assign, opSubAssign, -=)
+
+            // operator*=
+            ASSIGNMENT_OPERATOR_DEF(operator_multiply_assign, opMulAssign, *=)
+
+            // operator/=
+            ASSIGNMENT_OPERATOR_DEF(operator_divide_assign, opDivAssign, /=)
+
+            // operator%=
+            ASSIGNMENT_OPERATOR_DEF(operator_mod_assign, opModAssign, %=)
+
+            // operator&=
+            ASSIGNMENT_OPERATOR_DEF(operator_and_assign, opAndAssign, &=)
 
             // operator|=
             ASSIGNMENT_OPERATOR_DEF(operator_or_assign, opOrAssign, |=)
 
-#          undef BINARY_OPERATOR_DEF
-#          undef ASSIGNMENT_OPERATOR_DEF
+#           undef BINARY_OPERATOR_DEF
+#           undef ASSIGNMENT_OPERATOR_DEF
 
             
         protected:
@@ -1931,6 +1937,7 @@ namespace asdk {
     }
 
 #   undef ASDK_SFINAE_DEFAULT_FUNCTION_ARG
+#   undef ASDK_CONSTEXPR_BOOL_TMPL_ARG
 }
 
 namespace asdk {
