@@ -77,6 +77,10 @@ namespace astd {
         : ratio
     {
         ratio_ct() : ratio(Num, Den) {}
+        static void dtor(const ratio_ct& that)
+        {
+            that.astd::~ratio_ct();
+        }
     };
 
     namespace detail
