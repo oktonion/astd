@@ -1255,10 +1255,10 @@ namespace astd {
                 return true;
             }
         };
-        template<class DurationCastT, class RepT>
+        template<class MetaT, class RepT>
         static bool duration_register_methods(asIScriptEngine& engine, const namespace_cstr& ns_name, const type_cstr& func_name)
         {
-            return duration<RepT>::template register_methods<DurationCastT>(engine, ns_name, func_name);
+            return duration<RepT>::template register_methods<MetaT>(engine, ns_name, func_name);
         }
 
         template<class RepT>
@@ -1271,7 +1271,8 @@ namespace astd {
             const subtype_cstr& subtype_name
         )
         {
-            typedef typename DurationCastT::meta meta;
+            typedef typename DurationCastT::meta meta_type;
+            struct meta : meta_type {};
             struct type {
                 static duration<RepT>& result(duration_cast<RepT>& that) {
                     return that;
@@ -1297,7 +1298,7 @@ namespace astd {
                 asCALL_CDECL_OBJLAST
             ); if (r < 0) return false;
 
-            return astd::chrono::duration_register_methods<meta, RepT>(engine,
+            return astd::chrono::duration_register_methods<meta_type, RepT>(engine,
                 ns_name,
                 func_name
                 );
