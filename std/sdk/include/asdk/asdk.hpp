@@ -1169,7 +1169,7 @@ namespace asdk {
                 , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , FuncT func)
             {
-                const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + ")";
+                const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + "&in)";
             
                 typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1748,7 +1748,7 @@ namespace asdk {
             }
 
             template<class ThisT, class OtherT>
-            inline static T opAssign(ThisT& lhs, OtherT rhs) // objfirst
+            inline static T opAssign(ThisT& lhs, const OtherT &rhs) // objfirst
             {
                 return lhs = rhs;
             }
