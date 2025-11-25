@@ -79,29 +79,31 @@
     };
 
 #define SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(name) \
-            static void name(const ANGELSCRIPT_NS_QUALIFIER asSMessageInfo* asSMessageInfo, void*)                                                                                     \
-            {   ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext = ANGELSCRIPT_NS_QUALIFIER asGetActiveContext();                                                           \
-                if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_WARNING == asSMessageInfo->type)                                                                                                \
-                {                                                                                                                                                                      \
-                    DOCTEST_WARN_MESSAGE(asSMessageInfo, asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);  \
-                }                                                                                                                                                                      \
-                else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_INFORMATION == asSMessageInfo->type)                                                                                       \
-                {                                                                                                                                                                      \
-                    if (asIScriptContext)                                                                                                                                              \
-                        DOCTEST_ADD_MESSAGE_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                                     \
-                                asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                           \
-                    else                                                                                                                                                               \
-                        DOCTEST_MESSAGE(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                   \
-                }                                                                                                                                                                      \
-                else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_ERROR == asSMessageInfo->type)                                                                                             \
-                {                                                                                                                                                                      \
-                    if (asIScriptContext)                                                                                                                                              \
-                        DOCTEST_ADD_FAIL_CHECK_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                                  \
-                            asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                               \
-                    else                                                                                                                                                               \
-                        DOCTEST_FAIL_CHECK(asSMessageInfo->section << " (" << asSMessageInfo->row << ", " << asSMessageInfo->col << ") : " << asSMessageInfo->message);                \
-                }                                                                                                                                                                      \
-                else throw(asSMessageInfo->message);                                                                                                                                   \
+            static void name(const ANGELSCRIPT_NS_QUALIFIER asSMessageInfo* asSMessageInfo, void*)                                                                                 \
+            {   ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext = ANGELSCRIPT_NS_QUALIFIER asGetActiveContext(); typedef ::std::string string;                         \
+                const string message = asSMessageInfo->message? asSMessageInfo->message: ""; const string prefix = " ("; const string comma = ", ";                                \
+                const string section = asSMessageInfo->section? asSMessageInfo->section: ""; const string suffix = ") : ";                                                         \
+                if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_WARNING == asSMessageInfo->type)                                                                                            \
+                {                                                                                                                                                                  \
+                    DOCTEST_WARN_MESSAGE(asSMessageInfo, section << prefix << asSMessageInfo->row << comma << asSMessageInfo->col << suffix << message);                           \
+                }                                                                                                                                                                  \
+                else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_INFORMATION == asSMessageInfo->type)                                                                                   \
+                {                                                                                                                                                                  \
+                    if (asIScriptContext)                                                                                                                                          \
+                        DOCTEST_ADD_MESSAGE_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                                 \
+                                section << prefix << asSMessageInfo->row << comma << asSMessageInfo->col << suffix << message);                                                    \
+                    else                                                                                                                                                           \
+                        DOCTEST_MESSAGE(section << prefix << asSMessageInfo->row << comma << asSMessageInfo->col << suffix << message);                                            \
+                }                                                                                                                                                                  \
+                else if (ANGELSCRIPT_NS_QUALIFIER asMSGTYPE_ERROR == asSMessageInfo->type)                                                                                         \
+                {                                                                                                                                                                  \
+                    if (asIScriptContext)                                                                                                                                          \
+                        DOCTEST_ADD_FAIL_CHECK_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asSMessageInfo->row,                                              \
+                            section << prefix << asSMessageInfo->row << comma << asSMessageInfo->col << suffix << message);                                                        \
+                    else                                                                                                                                                           \
+                        DOCTEST_FAIL_CHECK(section << prefix << asSMessageInfo->row << comma << asSMessageInfo->col << suffix << message);                                         \
+                }                                                                                                                                                                  \
+                else throw(asSMessageInfo->message);                                                                                                                               \
             }
 
 #define SERVICE_EXCEPTION_CALLBACK_WITH_ASSERTS(name) \
