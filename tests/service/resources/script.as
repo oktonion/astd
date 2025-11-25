@@ -27,6 +27,7 @@ int chrono_and_print_test() {
 	  
 	  {
 	      auto count = period_mcs_sys.count();
+	      auto count = period_mcs_st.count();
 	  }
 	  
       std::print("system clock: period_mcs := {:d}, period_ms := {:d}, period_s := {:d}, begin.time_since := {:d}, end.time_since := {:d}, now.time_since := {:d}\n", 
