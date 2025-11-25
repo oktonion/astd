@@ -367,7 +367,7 @@ namespace astd {
                 char buffer[1024] = { 0 };
                 using namespace std;
                 typedef duration type;
-                typedef MetaT meta;
+                struct meta : MetaT {};
                 if (meta::count_cstr())
                 r = engine.RegisterObjectMethod(
                     type_cstr,
@@ -1029,7 +1029,7 @@ namespace astd {
                     duration_cannot_be_implemented
                 >::type milliseconds;
 
-                typedef duration_ct<> seconds;
+                typedef duration_ct<ratio_ct<1>/**/> seconds;
                 typedef duration_ct<ratio_ct<60>/**/> minutes;
                 typedef duration_ct<ratio_ct<3600>/**/> hours;
             };
@@ -1643,7 +1643,8 @@ namespace astd {
             static bool register_behaviours(asIScriptEngine& engine, const namespace_cstr& ns_name, const type_cstr& func_name, const subtype_cstr& subtype_name)
             {
                 typedef duration_cast type;
-                typedef typename DurationCastT::meta meta;
+                typedef typename DurationCastT::meta meta_type;
+                struct meta : meta_type {};
                 int r = 0;
                 const char* func_cstr = func_name.cstr;
                 const char* subtype_cstr = subtype_name.cstr;
@@ -2326,7 +2327,7 @@ namespace astd_script {
 
 
         typedef astd::chrono::duration_cast<asUINTMAX> type;
-        typedef type::meta meta;
+        struct meta : type::meta {};
 
         r = engine->RegisterObjectType(
             meta::func_cstr(),
