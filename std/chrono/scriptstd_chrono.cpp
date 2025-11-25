@@ -922,7 +922,7 @@ namespace astd {
 
                 const std::string ns = type_namespace_cstr ? type_namespace_cstr : "";
                 const asQWORD flags = asOBJ_VALUE | asOBJ_APP_CLASS_CD;
-                const std::string type_str = (ns.empty()? "": (ns + "::")) + type_cstr;
+                const std::string type_str = (ns.empty()? std::string(""): (ns + "::")) + type_cstr;
 
                 int r = 0;
 
@@ -931,15 +931,16 @@ namespace astd {
                     engine.SetDefaultNamespace(type_str.c_str());
 
                     struct type : period {
+                        typedef period period_type;
                         struct meta {
                             static const char* type_cstr() { return "period"; }
                             static const char* ctor_cstr() throw() { return "void ctor()"; }
                             static const char* copy_ctor_cstr() throw() { return "void cctor(const period&in)"; }
                             static const char* dtor_cstr() throw() { return "void dtor()"; }
                         };
-                        static void ctor(period& that) { new(&that) period(); }
-                        static void copy_ctor(const period& other, period& that) { new(&that) period(other); }
-                        static void dtor(period& that) { that.~period(); }
+                        static void ctor(period_type& that) { new(&that) period_type(); }
+                        static void copy_ctor(const period_type& other, period_type& that) { new(&that) period_type(other); }
+                        static void dtor(period_type& that) { that.dtor(that); }
                     };
 
                     r = engine.RegisterObjectType(
@@ -1969,8 +1970,8 @@ namespace astd_script {
         duration, duration_cast, time_point, system_clock, steady_clock
     };
 
-    template<class T, bool = chrono::type_traits::is_duration<T>::value>
-    struct register_duration {
+    template<class T, bool>
+    struct register_duration_impl {
         static int call(asIScriptEngine&, const std::string&, const std::string&, const std::string&)
         {
             return -1;
@@ -1978,7 +1979,7 @@ namespace astd_script {
     };
 
     template<class T>
-    struct register_duration <T, true> {
+    struct register_duration_impl <T, true> {
         static int call(asIScriptEngine &engine, const std::string &type_str, const std::string &subtype_str, const std::string &ns)
         {
             typedef T type;
@@ -2015,6 +2016,11 @@ namespace astd_script {
             return r;
         }
     };
+
+    template<class T>
+    struct register_duration 
+        : register_duration_impl<T, chrono::type_traits::is_duration<T>::value == bool(true)>
+    { };
 
     RegisterScriptStdFunction(duration)(asIScriptEngine* engine)
     {
