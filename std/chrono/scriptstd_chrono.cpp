@@ -785,7 +785,7 @@ namespace astd {
             struct meta
                 : duration_type::meta
             {
-#               define RepT "uintmax"
+#               define RepT "intmax"
                 typedef void type_cstr; // to block expicit usage of meta function
 
                 static const char* ctor_cstr() throw() { return "void ctor()"; }
@@ -1316,7 +1316,7 @@ namespace astd {
             static const char* end_cstr() throw() { return "void end()"; }
             static const char* template_callback_cstr() throw() { return "bool template_callback(int&in, bool&out)"; }
 
-            static const char* count_cstr() throw() { return "void count(void)"; }
+            static const char* count_cstr() throw() { return 0; }
 
             static const char* result_cstr() throw() { return TYPE_NAME "& opImplCast()"; }
             static const char* result_const_cstr() throw() { return "const " TYPE_NAME "& opImplCast() const"; }
@@ -1973,7 +1973,7 @@ namespace astd_script {
         { static void call(asIScriptEngine * engine); static void call_next(asIScriptEngine * engine) { call(engine); RegisterScriptStdFunctionHelper<N+1>::call(engine); } }; void RegisterScriptStdFunctionHelperN<N>::call
     
     enum {
-        duration, duration_cast, time_point, system_clock, steady_clock
+        duration, duration_cast, duration_predefined, time_point, system_clock, steady_clock
     };
 
     template<class T, bool>
@@ -2018,6 +2018,16 @@ namespace astd_script {
                 static_cast<type_cstr>(type_str.c_str()), 
                 static_cast<subtype_cstr>(subtype_str.c_str())
             ) ? -1 : 0; assert(r >= 0);
+
+            // duration cast 
+            {
+                const std::string dc_type_str = "duration_cast<" + ns +  type_str + ">";
+                r = engine.RegisterObjectType(
+                    dc_type_str.c_str(),
+                    sizeof(type),
+                    flags
+                ); assert(r >= 0);
+            }
 
             return r;
         }
@@ -2068,68 +2078,7 @@ namespace astd_script {
         // ratio
         assert(engine->GetTypeInfoByDecl("ratio<intmax, intmax>") != NULL);
 
-        // nanoseconds
-        {
-            typedef astd::chrono::nanoseconds type;
-            const std::string type_str = "nanoseconds";
-            const std::string subtype_str = ns + type_str + "::period";
 
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-        // microseconds
-        {
-            typedef astd::chrono::microseconds type;
-            const std::string type_str = "microseconds";
-            const std::string subtype_str = ns + type_str + "::period";
-
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-        // milliseconds
-        {
-            typedef astd::chrono::milliseconds type;
-            const std::string type_str = "milliseconds";
-            const std::string subtype_str = ns + type_str + "::period";
-
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-        // seconds
-        {
-            typedef astd::chrono::seconds type;
-            const std::string type_str = "seconds";
-            const std::string subtype_str = ns + type_str + "::period";
-
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-        // minutes
-        {
-            typedef astd::chrono::minutes type;
-            const std::string type_str = "minutes";
-            const std::string subtype_str = ns + type_str + "::period";
-
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-        // hours
-        {
-            typedef astd::chrono::hours type;
-            const std::string type_str = "hours";
-            const std::string subtype_str = ns + type_str + "::period";
-
-            if (chrono::type_traits::is_duration<type>::value)
-                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
-        }
-
-
-        astd::chrono::duration<asUINTMAX>::meta::registering() = false;
         r = engine->SetDefaultNamespace(ns.c_str()); assert(r >= 0);
     }
 
@@ -2358,6 +2307,76 @@ namespace astd_script {
         ) ? -1 : 0; assert(r >= 0);
 
         r = engine->SetDefaultNamespace(ns.c_str()); assert(r >= 0);
+    }
+
+    RegisterScriptStdFunction(duration_predefined)(asIScriptEngine* engine)
+    {
+        int r = 0;
+        std::string ns = engine->GetDefaultNamespace(); if (!ns.empty()) ns += "::";
+
+        astd::chrono::duration<asUINTMAX>::meta::registering() = true;
+        // nanoseconds
+        {
+            typedef astd::chrono::nanoseconds type;
+            const std::string type_str = "nanoseconds";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+        // microseconds
+        {
+            typedef astd::chrono::microseconds type;
+            const std::string type_str = "microseconds";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+        // milliseconds
+        {
+            typedef astd::chrono::milliseconds type;
+            const std::string type_str = "milliseconds";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+        // seconds
+        {
+            typedef astd::chrono::seconds type;
+            const std::string type_str = "seconds";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+        // minutes
+        {
+            typedef astd::chrono::minutes type;
+            const std::string type_str = "minutes";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+        // hours
+        {
+            typedef astd::chrono::hours type;
+            const std::string type_str = "hours";
+            const std::string subtype_str = ns + type_str + "::period";
+
+            if (chrono::type_traits::is_duration<type>::value)
+                r = register_duration<type>::call(*engine, type_str, subtype_str, ns); assert(r >= 0);
+        }
+
+
+        astd::chrono::duration<asUINTMAX>::meta::registering() = false;
     }
 
 #   undef RegisterScriptStdFunction
