@@ -1352,7 +1352,12 @@ namespace astd {
                 that.astd::chrono::duration_cast<RepT>::~duration_cast();
             }
 
+
             static bool template_callback(asITypeInfo& type_info, bool& dont_GC) {
+
+                static bool registering_generic_duration_interface = false;
+                if (registering_generic_duration_interface) return true;
+
                 if (!type_info.GetSubType()) return false;
                 enum { DurationT };
                 asITypeInfo& DurationT_type_info = *type_info.GetSubType(DurationT);
@@ -1403,7 +1408,6 @@ namespace astd {
                 // registering generic duration interface
                 {
 
-                    static bool registering_generic_duration_interface = false;
                     struct lambdas {
 
                         static astd::asType RepT_type(const asITypeInfo& DurationT_type_info, bool is_duration)
@@ -1617,9 +1621,9 @@ namespace astd {
                                 asMETHOD(duration_type, count), asCALL_THISCALL
                             ); assert(r >= 0);
                         }
-                    }
 
-                    registering_generic_duration_interface = false;
+                        registering_generic_duration_interface = false;
+                    }
                 }
 
                 for (asUINT i = 0; i < DurationT_type_info.GetBehaviourCount(); ++i)
