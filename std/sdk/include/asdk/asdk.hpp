@@ -1429,7 +1429,9 @@ namespace asdk {
             template<class OtherT, class ThisT>                                                                                                    \
             reflect&                                                                                                                               \
             operator opSym(                                                                                                                        \
-                typename type_traits::conditional<const std::string&, type_traits::arg_type_ph                                                     \
+                typename type_traits::conditional<                                                                                                 \
+                  typename type_traits::conditional<const std::string&, type_traits::arg_type_ph, type_traits::is_same<ThisT, T>::value>::type     \
+                , type_traits::arg_type_ph                                                                                                         \
                 , sizeof((OtherT)(*((OtherT*)(42))) opSym (T)(*((T*)(42)))) != sizeof_Tx2>::type other_str)                                        \
             {                                                                                                                                      \
                 return operator_<OtherT, ThisT>(other_str);                                                                                        \
