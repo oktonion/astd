@@ -1316,7 +1316,7 @@ namespace astd {
             static const char* end_cstr() throw() { return "void end()"; }
             static const char* template_callback_cstr() throw() { return "bool template_callback(int&in, bool&out)"; }
 
-            static const char* count_cstr() throw() { return 0; }
+            static const char* count_cstr() throw() { return "void count(void)"; }
 
             static const char* result_cstr() throw() { return TYPE_NAME "& opImplCast()"; }
             static const char* result_const_cstr() throw() { return "const " TYPE_NAME "& opImplCast() const"; }
