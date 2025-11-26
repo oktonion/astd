@@ -557,7 +557,7 @@ namespace astd {
         };
 
         template<class ClockT, 
-            class DurationT = duration<asUINTMAX>
+            class DurationT = duration<asINTMAX>
         >
         struct time_point {
             struct meta
@@ -779,9 +779,9 @@ namespace astd {
         template<asINTMAX Num, asINTMAX Den>
         struct duration_ct<
             ratio_ct<Num, Den>
-        > : duration<asUINTMAX>
+        > : duration<asINTMAX>
         {
-            typedef duration<asUINTMAX> duration_type;
+            typedef duration<asINTMAX> duration_type;
             struct meta
                 : duration_type::meta
             {
@@ -2045,11 +2045,11 @@ namespace astd_script {
 
         const asQWORD flags = asOBJ_VALUE | asOBJ_APP_CLASS_CD;
 
-        astd::chrono::duration<asUINTMAX>::meta::registering() = true;
+        astd::chrono::duration<asINTMAX>::meta::registering() = true;
 
         // duration
         {
-            typedef astd::chrono::duration<asUINTMAX> type;
+            typedef astd::chrono::duration<asINTMAX> type;
 
             r = engine->RegisterObjectType(
                 type::meta::type_cstr(),
@@ -2160,7 +2160,7 @@ namespace astd_script {
                 r = engine->RegisterObjectMethod(
                     type_cstr,
                     ("const " + duration_type_str + " & opImplCast() const").c_str(),
-                    asFUNCTIONPR(type::duration_cast, (type&), astd::chrono::duration<asUINTMAX>*), asCALL_CDECL_OBJLAST
+                    asFUNCTIONPR(type::duration_cast, (type&), astd::chrono::duration<asINTMAX>*), asCALL_CDECL_OBJLAST
                 ); assert(r >= 0);
             }
 
@@ -2244,7 +2244,7 @@ namespace astd_script {
                 r = engine->RegisterObjectMethod(
                     type_cstr,
                     ("const " + duration_type_str + " & opImplCast() const").c_str(),
-                    asFUNCTIONPR(type::duration_cast, (type&), astd::chrono::duration<asUINTMAX>*), asCALL_CDECL_OBJLAST
+                    asFUNCTIONPR(type::duration_cast, (type&), astd::chrono::duration<asINTMAX>*), asCALL_CDECL_OBJLAST
                 ); assert(r >= 0);
             }
 
@@ -2314,7 +2314,7 @@ namespace astd_script {
         int r = 0;
         std::string ns = engine->GetDefaultNamespace(); if (!ns.empty()) ns += "::";
 
-        astd::chrono::duration<asUINTMAX>::meta::registering() = true;
+        astd::chrono::duration<asINTMAX>::meta::registering() = true;
         // nanoseconds
         {
             typedef astd::chrono::nanoseconds type;
@@ -2376,7 +2376,7 @@ namespace astd_script {
         }
 
 
-        astd::chrono::duration<asUINTMAX>::meta::registering() = false;
+        astd::chrono::duration<asINTMAX>::meta::registering() = false;
     }
 
 #   undef RegisterScriptStdFunction
