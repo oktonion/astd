@@ -11,6 +11,8 @@ int chrono_and_print_test() {
       std::chrono::system_clock::duration period_sys = end_sys - begin_sys;
       std::chrono::steady_clock::duration period_st = end_st - begin_st;
 	  
+      auto period_ms_test = std::chrono::duration_cast<std::chrono::milliseconds>(period_sys);
+      auto period_ms_test2 = std::chrono::duration_cast<std::chrono::milliseconds>(period_sys);
       auto period_mcs_sys = std::chrono::duration_cast<std::chrono::microseconds>(period_sys);
       auto period_mcs_st = std::chrono::duration_cast<std::chrono::microseconds>(period_st);
 	  
@@ -28,6 +30,8 @@ int chrono_and_print_test() {
 	  {
 	      auto count_sys = period_mcs_sys.count();
 	      auto count_st = period_mcs_st.count();
+		  period_ms_test.count();
+		  period_ms_test2.count();
 	  }
 	  
       std::print("system clock: period_mcs := {:d}, period_ms := {:d}, period_s := {:d}, begin.time_since := {:d}, end.time_since := {:d}, now.time_since := {:d}\n", 
