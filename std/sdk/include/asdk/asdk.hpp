@@ -1082,6 +1082,13 @@ namespace asdk {
 
                 typedef 
                 typename
+                conditional<arg1_type, 
+                    typename conditional<argN_type, void, is_compatible_with_cdecl_objlast::value == bool(true)>::type,
+                    is_compatible_with_cdecl_objfirst::value == bool(true)
+                >::type cdecl_obj_type;
+
+                typedef 
+                typename
                 conditional<class_type, thiscall_obj_type,
                     is_compatible_with_thiscall::value == bool(true)
                 >::type obj_type;
@@ -1515,6 +1522,52 @@ namespace asdk {
                 return operator_compare(op_func, other_str);
             }
 
+            template<class IndexT, class ReturnT, class FuncT>
+            typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(IndexT)>::type
+            operator_index(typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(IndexT)>::type index_str
+                , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(IndexT)>::type return_str
+                , FuncT func)
+            {
+                typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(IndexT)> op_traits;
+                typedef typename op_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                typedef typename op_traits::cdecl_obj_type cdecl_obj_type;
+                typedef typename type_traits::remove_reference<cdecl_obj_type>::type cdecl_obj_type_clear;
+                const std::string op_str = return_str + " opIndex(" + format_function_argument<const IndexT>(index_str) + ")" +
+                    (type_traits::is_const<cdecl_obj_type_clear>::value ? " const" : "");
+            
+                const asECallConvTypes asCALL =
+                    type_traits::is_same< class_type, void>::value ? (
+                        op_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        op_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, op_str, asFunc, asCALL);
+                return *this;
+            }
+
+            template<class IndexT, class ReturnT>
+            reflect&
+            operator_index(const std::string& index_str,
+                const std::string& return_str)
+            {
+                typedef 
+                typename 
+                type_traits::remove_reference<ReturnT>::type
+                ReturnT_clear;
+
+                typedef 
+                typename
+                type_traits::conditional<
+                    const T&, T&,
+                    type_traits::is_const<ReturnT_clear>::value
+                >::type type;
+                ReturnT(*op_func)(type, IndexT) = &opIndex;
+                return operator_index<IndexT, ReturnT>(index_str, return_str, op_func);
+            }
+
 #           ifndef BINARY_OPERATOR_DEF
 #           define BINARY_OPERATOR_DEF(operator_, opName, opSym)                                                                                   \
             template<class ReturnT, class OtherT, class FuncT>                                                                                     \
@@ -1752,6 +1805,7 @@ namespace asdk {
             // operator|=
             ASSIGNMENT_OPERATOR_DEF(operator_or_assign, opOrAssign, |=)
 
+
 #           undef BINARY_OPERATOR_DEF
 #           undef ASSIGNMENT_OPERATOR_DEF
 
@@ -1931,6 +1985,18 @@ namespace asdk {
                 if (std::greater<T>()(lhs, rhs))
                     return 1;
                 return 0;
+            }
+
+
+            template<class ReturnT, class IndexT>
+            inline static ReturnT opIndex(const T& lhs, IndexT index) // objfirst
+            {
+                return lhs[index];
+            }
+            template<class ReturnT, class IndexT>
+            inline static ReturnT opIndex(T& lhs, IndexT index) // objfirst
+            {
+                return lhs[index];
             }
 
             template<class OtherT>
