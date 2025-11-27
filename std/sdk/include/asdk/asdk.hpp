@@ -37,6 +37,7 @@
 #include <cstring>
 #include <exception>
 #include <stdexcept>
+#include <iterator>
 
 // AngelScript functions, types etc.
 namespace asdk {
@@ -184,7 +185,9 @@ namespace asdk {
                 if (type_info) return 0 != (type_info->GetFlags() & asOBJ_ENUM);
                 return type_id > asTYPEID_DOUBLE && type_id != asTYPEID_APPOBJECT; // enums have a type id larger than doubles
             }
-            bool is_class() const { return !!type_info && !is_enum(); }
+            bool is_object() const { return !!type_info; }
+            bool is_class() const { return is_object() && !is_enum(); }
+            
 
             bool operator!() const {
                 return !type_info && (asTYPEID_APPOBJECT == type_id || type_id < 0);
@@ -250,24 +253,109 @@ namespace asdk {
             struct is_pointer<T*> {
                 static const bool value = sizeof(T*) == sizeof(void*);
             };
+
+            template<class T>
+            struct remove_pointer {
+                typedef T type;
+            };
+            template<class T>
+            struct remove_pointer<T*> {
+                typedef T type;
+            };
         }
-
-        template<class InIterator, class OutIterator>
-        inline
-        void copy(const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst)
-        {
-            if (!type) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type"));
-
-            asIScriptEngine* engine = type.type_info->GetEngine();
-            if (!engine) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot get script engine"));
-
-            const int type_size = type.size();
-            if (type_size <= 0) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type::size"));
-
-            if (type.is_class() && (type.type_id & ~asTYPEID_MASK_SEQNBR))
+        
+        namespace {
+            class copy
             {
-                bool handle_assigned = false;
-                if (type.is_handle())
+                template<class Iterator>
+                struct increment_functor {
+                    typedef void(*incr_type)(Iterator&, int);
+                    typedef bool(*cmp_not_equal_type)(Iterator&, Iterator&);
+                    struct type
+                    {
+                    private:
+                        incr_type incr;
+                        cmp_not_equal_type not_equal;
+                    public:
+                        type(incr_type incr, cmp_not_equal_type not_equal) : incr(incr), not_equal(not_equal) {}
+                        type(cmp_not_equal_type not_equal, incr_type incr) : incr(incr), not_equal(not_equal) {}
+                        void operator()(Iterator& it, int type_size) const { return incr(it, type_size); }
+                        bool operator()(Iterator& lhs, Iterator& rhs) const { return not_equal(lhs, rhs); }
+                        bool operator!() const { return !incr || !equal; }
+                    };
+                    
+                    inline static void pre_incr(Iterator& it, int) { ++it; }
+                    inline static void incr_by(Iterator& it, int type_size) { it += type_size; }
+                    inline static bool cmp_not_equal(Iterator& lhs, Iterator& rhs) { return lhs != rhs; }
+                    inline static bool cmp_not_less(Iterator& lhs, Iterator& rhs) { return !(lhs < rhs); }
+                };
+                template<class Iterator, bool>
+                struct increment_impl {
+                    typedef increment_functor<Iterator> it_incr_functor;
+                    typedef typename it_incr_functor::type functor_type;
+                    inline
+                    static functor_type make(Iterator& it, int type_size)
+                    {
+                        if (sizeof(typename type_traits::remove_pointer<Iterator>::type) < type_size)
+                        {
+                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_less);
+                        }
+                        else
+                        {
+                            return functor_type(it_incr_functor::pre_incr, it_incr_functor::cmp_not_equal);
+                        }
+                    }
+                };
+                template<class Iterator>
+                struct increment_impl<Iterator, false> {
+                    typedef increment_functor<Iterator> it_incr_functor;
+                    typedef typename it_incr_functor::type functor_type;
+                    template<class IteratorTag>
+                    inline
+                    static functor_type make_impl(Iterator& it, int type_size, IteratorTag)
+                    {
+                        if (sizeof(*it) < type_size)
+                        {
+                            return functor_type(0, 0);
+                        }
+                        else
+                        {
+                            return functor_type(it_incr_functor::pre_incr, it_incr_functor::cmp_not_equal);
+                        }
+                    }
+
+                    inline
+                    static functor_type make_impl(Iterator& it, int type_size, std::random_access_iterator_tag)
+                    {
+                        if (sizeof(*it) < type_size)
+                        {
+                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_less);
+                        }
+                        else
+                        {
+                            return functor_type(it_incr_functor::pre_incr, it_incr_functor::cmp_not_equal);
+                        }
+                    }
+
+                    inline
+                    static functor_type make(Iterator& it, int type_size)
+                    {
+                        typename std::iterator_traits<Iterator>::iterator_category tag;
+                        return make_impl(it, type_size, tag);
+                    }
+                };
+
+
+                template<class Iterator>
+                struct increment 
+                    : increment_impl<Iterator, type_traits::is_pointer<Iterator>::value> 
+                {
+                    typedef typename increment_functor<Iterator>::type functor_type;
+                };
+                
+                template<class InIterator, class OutIterator>
+                inline
+                bool copy_handle(asIScriptEngine &engine, const int& type_size, const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst) const
                 {
                     const std::string decl =
                         std::string(type.name()) + "& opHndlAssign(const " + std::string(type.name()) + "&in)";
@@ -275,12 +363,15 @@ namespace asdk {
                     if (func)
                     {
                         asIScriptContext* ctx = asGetActiveContext();
-                        if (!ctx) ctx = engine->RequestContext();
+                        if (!ctx) ctx = engine.RequestContext();
                         if (0 != ctx->Prepare(func))
-                            ctx = engine->RequestContext();
+                            ctx = engine.RequestContext();
                         if (0 != ctx->Prepare(func))
                             throw(std::logic_error(std::string("astd::copy<") + type.name() + ">: cannot prepare context for 'opHndlAssign' function"));
-                        for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                        typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
+                        typename outIncr::functor_type out_incr = outIncr::make(outFirst, type_size);
+                        typename inIncr::functor_type in_incr = inIncr::make(inFirst, type_size);
+                        for (; inLast != inFirst; out_incr(outFirst, type_size), in_incr(inFirst, type_size))
                         {
                             void* dst = &(*outFirst);
                             const void* src = &(*inFirst);
@@ -289,62 +380,105 @@ namespace asdk {
                             // TODO: Handle errors
                             ctx->Execute();
                         }
-                        engine->ReturnContext(ctx);
-                        handle_assigned = true;
+                        engine.ReturnContext(ctx);
+                        return true;
                     }
+                    return false;
                 }
 
-                if (!handle_assigned)
+                
+                template<class InIterator, class OutIterator>
+                inline
+                void copy_class(asIScriptEngine& engine, const int &type_size, const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst) const
                 {
-                    if (sizeof(void*) != type_size) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type size != sizeof(void*)"));
-                    // ordinary value assign instead
-                    for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                    bool handle_assigned = false;
+                    if (type.is_handle())
                     {
-                        void* dst = &(*outFirst);
-                        const void* src = &(*inFirst);
-                        const void* const &obj_ptr = *reinterpret_cast<void* const*>(dst); // made a reference for debbuging purposes
-                        if (!obj_ptr)
+                        handle_assigned = copy_handle(engine, type_size, type, inFirst, inLast, outFirst);
+                    }
+
+                    if (!handle_assigned)
+                    {
+                        if (sizeof(void*) != type_size) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type size != sizeof(void*)"));
+                        // ordinary value assign instead
+                        typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
+                        typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
+                        typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
+                        for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
                         {
-                            void* obj = engine->CreateScriptObjectCopy(const_cast<void*>(src), type.type_info);
-                            if (!obj) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot create copy of script object"));
-                            std::memcpy(dst, &obj, sizeof(void*)); // since we store just pointers
+                            void* dst = &(*outFirst);
+                            const void* src = &(*inFirst);
+                            const void* const& obj_ptr = *reinterpret_cast<void* const*>(dst); // made it a reference for debbuging purposes
+                            if (!obj_ptr)
+                            {
+                                void* obj = engine.CreateScriptObjectCopy(const_cast<void*>(src), type.type_info);
+                                if (!obj) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot create copy of script object"));
+                                std::memcpy(dst, &obj, sizeof(void*)); // since we store just pointers
+                            }
+                            else
+                            {
+                                engine.AssignScriptObject(dst, const_cast<void*>(src), type.type_info);
+                            }
+                        }
+                    }
+                }
+            public:
+                template<class InIterator, class OutIterator>
+                inline
+                void operator()(const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst) const
+                {
+                    if (!type) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type"));
+
+                    asIScriptEngine* engine = type.type_info->GetEngine();
+                    if (!engine) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot get script engine"));
+
+                    const int type_size = type.size();
+                    if (type_size <= 0) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type::size"));
+
+                    if (type.is_class() && (type.type_id & ~asTYPEID_MASK_SEQNBR))
+                    {
+                        copy_class(*engine, type_size, type, inFirst, inLast, outFirst);
+                    }
+                    else if (type.is_handle())
+                    {
+                        typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
+                        typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
+                        typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
+                        for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
+                        {
+                            void* dst = &(*outFirst);
+                            const void* src = &(*inFirst);
+                            void* obj_ptr = *reinterpret_cast<void* const*>(dst);
+                            void* value_obj_ptr = *reinterpret_cast<void* const*>(src); // since source is reference, 'src' stores pointer to pointer
+                            engine->AddRefScriptObject(value_obj_ptr, type.type_info);
+                            if (obj_ptr)
+                                engine->ReleaseScriptObject(obj_ptr, type.type_info);
+                        }
+                    }
+                    else
+                    {
+                        if (type_traits::is_pointer<InIterator>::value && type_traits::is_pointer<OutIterator>::value)
+                        {
+                            void* dst = &(*outFirst);
+                            const void* src = &(*inFirst);
+                            const std::ptrdiff_t count = std::distance(inFirst, inLast);
+                            std::memcpy(dst, src, type_size * count);
                         }
                         else
                         {
-                            engine->AssignScriptObject(dst, const_cast<void*>(src), type.type_info);
+                            typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
+                            typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
+                            typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
+                            for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
+                            {
+                                void* dst = &(*outFirst);
+                                const void* src = &(*inFirst);
+                                std::memcpy(dst, src, type_size);
+                            }
                         }
                     }
                 }
-            }
-            else if (type.is_handle())
-            {
-                for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
-                {
-                    void* dst = &(*outFirst);
-                    const void* src = &(*inFirst);
-                    void* obj_ptr = *reinterpret_cast<void* const*>(dst);
-                    void* value_obj_ptr = *reinterpret_cast<void* const*>(src); // since source is reference, 'src' stores pointer to pointer
-                    engine->AddRefScriptObject(value_obj_ptr, type.type_info);
-                    if (obj_ptr)
-                        engine->ReleaseScriptObject(obj_ptr, type.type_info);
-                }
-            }
-            else
-            {
-                if (type_traits::is_pointer<InIterator>::value && type_traits::is_pointer<OutIterator>::value)
-                {
-                    void* dst = &(*outFirst);
-                    const void* src = &(*inFirst);
-                    const std::ptrdiff_t count = inLast - inFirst;
-                    std::memcpy(dst, src, type_size * count);
-                }
-                else for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
-                {
-                    void* dst = &(*outFirst);
-                    const void* src = &(*inFirst);
-                    std::memcpy(dst, src, type_size);
-                }
-            }
+            } copy;
         }
     }
 }
