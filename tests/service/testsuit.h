@@ -13,6 +13,7 @@
 
 #include <cstring>
 #include <string>
+#include <fstream>
 
 #define SERVICE_CONCAT3(a, b) a##b
 #define SERVICE_CONCAT2(a, b) SERVICE_CONCAT3(a,b)
@@ -110,7 +111,7 @@
             static void name(ANGELSCRIPT_NS_QUALIFIER asIScriptContext* asIScriptContext, void*)                                                                                   \
             {                                                                                                                                                                      \
                 DOCTEST_ADD_MESSAGE_AT(asIScriptContext->GetEngine()->GetModuleByIndex(0)->GetName(), asIScriptContext->GetExceptionLineNumber(),                                  \
-                        "unhandled exception caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());                    \
+                        "unhandled exception in script caught at line " << asIScriptContext->GetExceptionLineNumber() << ": " << asIScriptContext->GetExceptionString());          \
             }
 
 #ifdef AS_NAMESPACE_QUALIFIER
@@ -311,7 +312,7 @@ namespace testsuite {
             }                                                                                                                                                     \
             ~EngineRAII(){ engine.ShutDownAndRelease(); }                                                                                                         \
             protected:                                                                                                                                            \
-            static asIScriptEngine *asCreateScriptEngineFailedAssert() { using namespace testsuite;                                                               \
+            static testsuite::asIScriptEngine *asCreateScriptEngineFailedAssert() { using namespace testsuite; using testsuite::asIScriptEngine;                  \
                 asIScriptEngine* engine=0; DOCTEST_REQUIRE_MESSAGE((engine = asCreateScriptEngine()), "failed to create AngelScript engine"); return engine; }    \
             friend struct ContextRAII;                                                                                                                            \
         } EngineRAII
@@ -320,29 +321,32 @@ namespace testsuite {
             ContextRAII(struct EngineRAII& EngineRAII)                                                                                                                \
             : context(*RequestContextFailedAssert(EngineRAII.engine)) { context.SetExceptionCallback(asFUNCTION(ExceptionCallback), 0, asCALL_CDECL); }               \
             ~ContextRAII(){context.Release();}                                                                                                                        \
-            asIScriptContext &context;protected:                                                                                                                      \
-            static asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite;                                                 \
+            testsuite::asIScriptContext &context;protected:                                                                                                           \
+            static testsuite::asIScriptContext *RequestContextFailedAssert(asIScriptEngine &engine) { using namespace testsuite; using testsuite::asIScriptContext;   \
                 asIScriptContext* context=0; DOCTEST_REQUIRE_MESSAGE((context = engine.RequestContext()), "failed to request AngelScript context"); return context; } \
         } ContextRAII(EngineRAII); name = ContextRAII.context;
 
 
-#define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) testsuite::AngelScript::asIScriptFunction* name = 0;{                                                                     \
-            struct MessageCallbackRAII {                                                                                                                                                \
-                typedef testsuite::IEngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                     \
-                MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                          \
-                    if (EngineRAII() == &testsuite::IEngineRAII::MessageCallback) { EngineRAII(&MessageCallback); }                                                                     \
-                }                                                                                                                                                                       \
-                ~MessageCallbackRAII() {                                                                                                                                                \
-                    if (EngineRAII() == &MessageCallback) { EngineRAII(&testsuite::IEngineRAII::MessageCallback); }                                                                     \
-                }                                                                                                                                                                       \
-            } MessageCallbackRAII(EngineRAII); testsuite::AngelScript::asIScriptModule *asIScriptModule = 0;                                                                            \
-            testsuite::AngelScript::CScriptBuilder CScriptBuilder; testsuite::AngelScript::asIScriptEngine *asIScriptEngine = &EngineRAII.engine;                                       \
-            const std::string moduleName = module_cstr; const std::string decl = decl_cstr;                                                                                             \
-            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName); \
-            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.AddSectionFromFile(moduleName.c_str()), "CScriptBuilder::AddSectionFromFile: cannot load script from: " + moduleName);          \
-            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.BuildModule(), "CScriptBuilder::BuildModule: script has errors: " + moduleName);                                                \
-            DOCTEST_REQUIRE_MESSAGE((asIScriptModule = asIScriptEngine->GetModule(moduleName.c_str())), "asIScriptEngine::GetModule: cannot find module: " + moduleName);               \
-            DOCTEST_REQUIRE_MESSAGE((name = asIScriptModule->GetFunctionByDecl(decl.c_str())), "asIScriptModule::GetFunctionByDecl: cannot find function: " + decl);                    \
+#define SERVICE_IMPORT_FUNCTION(name, module_cstr, decl_cstr) testsuite::AngelScript::asIScriptFunction* name = 0;{                                                                          \
+            struct MessageCallbackRAII {                                                                                                                                                     \
+                typedef testsuite::IEngineRAII EngineRAII_t; const EngineRAII_t &EngineRAII; SERVICE_MESSAGE_CALLBACK_WITH_ASSERTS(MessageCallback)                                          \
+                MessageCallbackRAII(const EngineRAII_t &EngineRAII) : EngineRAII(EngineRAII) {                                                                                               \
+                    if (EngineRAII() == &testsuite::IEngineRAII::MessageCallback) { EngineRAII(&MessageCallback); }                                                                          \
+                }                                                                                                                                                                            \
+                ~MessageCallbackRAII() {                                                                                                                                                     \
+                    if (EngineRAII() == &MessageCallback) { EngineRAII(&testsuite::IEngineRAII::MessageCallback); }                                                                          \
+                }                                                                                                                                                                            \
+            } MessageCallbackRAII(EngineRAII); testsuite::AngelScript::asIScriptModule *asIScriptModule = 0;                                                                                 \
+            testsuite::AngelScript::CScriptBuilder CScriptBuilder; testsuite::AngelScript::asIScriptEngine *asIScriptEngine = &EngineRAII.engine;                                            \
+            const std::string sectionStr = module_cstr; const std::string decl = decl_cstr;                                                                                                  \
+            const bool is_file = !!std::fstream(sectionStr.c_str()); const std::string moduleName = is_file ? sectionStr : std::string(#name) + ": " + decl;                                 \
+            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.StartNewModule(asIScriptEngine, moduleName.c_str()), "CScriptBuilder::StartNewModule: cannot start new module: " + moduleName);      \
+            if (is_file) DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.AddSectionFromFile(sectionStr.c_str()), "CScriptBuilder::AddSectionFromFile: cannot load script from: " + sectionStr);  \
+            else DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.AddSectionFromMemory(moduleName.c_str(), sectionStr.c_str(), sectionStr.length()),                                              \
+                          "CScriptBuilder::AddSectionFromFile: cannot load script from: " + moduleName);                                                                                     \
+            DOCTEST_REQUIRE_MESSAGE(0 <= CScriptBuilder.BuildModule(), "CScriptBuilder::BuildModule: script has errors: " + moduleName);                                                     \
+            DOCTEST_REQUIRE_MESSAGE((asIScriptModule = asIScriptEngine->GetModule(moduleName.c_str())), "asIScriptEngine::GetModule: cannot find module: " + moduleName);                    \
+            DOCTEST_REQUIRE_MESSAGE((name = asIScriptModule->GetFunctionByDecl(decl.c_str())), "asIScriptModule::GetFunctionByDecl: cannot find function: " + decl);                         \
         }
 
 #include <cstdio>
