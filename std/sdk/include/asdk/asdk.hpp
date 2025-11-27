@@ -270,7 +270,7 @@ namespace asdk {
                 template<class Iterator>
                 struct increment_functor {
                     typedef void(*incr_type)(Iterator&, int);
-                    typedef bool(*cmp_not_equal_type)(Iterator&, Iterator&);
+                    typedef bool(*cmp_not_equal_type)(const Iterator&, const Iterator&);
                     struct type
                     {
                     private:
@@ -280,14 +280,17 @@ namespace asdk {
                         type(incr_type incr, cmp_not_equal_type not_equal) : incr(incr), not_equal(not_equal) {}
                         type(cmp_not_equal_type not_equal, incr_type incr) : incr(incr), not_equal(not_equal) {}
                         void operator()(Iterator& it, int type_size) const { return incr(it, type_size); }
-                        bool operator()(Iterator& lhs, Iterator& rhs) const { return not_equal(lhs, rhs); }
+                        bool operator()(const Iterator &lhs, const Iterator& rhs) const { return not_equal(lhs, rhs); }
                         bool operator!() const { return !incr || !equal; }
                     };
                     
                     inline static void pre_incr(Iterator& it, int) { ++it; }
                     inline static void incr_by(Iterator& it, int type_size) { it += type_size; }
-                    inline static bool cmp_not_equal(Iterator& lhs, Iterator& rhs) { return lhs != rhs; }
-                    inline static bool cmp_not_less(Iterator& lhs, Iterator& rhs) { return !(lhs < rhs); }
+                    inline static bool cmp_not_equal(const Iterator& lhs, const Iterator& rhs) { return lhs != rhs; }
+                    inline static bool cmp_not_equal_or_greater(const Iterator& lhs, const Iterator &rhs) {
+                        if (!(lhs < rhs)) return false;
+                        return true;
+                    }
                 };
                 template<class Iterator, bool>
                 struct increment_impl {
@@ -298,7 +301,7 @@ namespace asdk {
                     {
                         if (sizeof(typename type_traits::remove_pointer<Iterator>::type) < type_size)
                         {
-                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_less);
+                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_equal_or_greater);
                         }
                         else
                         {
@@ -329,7 +332,7 @@ namespace asdk {
                     {
                         if (sizeof(*it) < type_size)
                         {
-                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_less);
+                            return functor_type(it_incr_functor::incr_by, it_incr_functor::cmp_not_equal_or_greater);
                         }
                         else
                         {
@@ -369,9 +372,9 @@ namespace asdk {
                         if (0 != ctx->Prepare(func))
                             throw(std::logic_error(std::string("astd::copy<") + type.name() + ">: cannot prepare context for 'opHndlAssign' function"));
                         typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
-                        typename outIncr::functor_type out_incr = outIncr::make(outFirst, type_size);
-                        typename inIncr::functor_type in_incr = inIncr::make(inFirst, type_size);
-                        for (; inLast != inFirst; out_incr(outFirst, type_size), in_incr(inFirst, type_size))
+                        typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
+                        typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
+                        for (; in_func(inFirst, inLast); out_func(outFirst, type_size), in_func(inFirst, type_size))
                         {
                             void* dst = &(*outFirst);
                             const void* src = &(*inFirst);
@@ -404,7 +407,7 @@ namespace asdk {
                         typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
                         typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
                         typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
-                        for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
+                        for (; in_func(inFirst, inLast); out_func(outFirst, type_size), in_func(inFirst, type_size))
                         {
                             void* dst = &(*outFirst);
                             const void* src = &(*inFirst);
@@ -427,6 +430,8 @@ namespace asdk {
                 inline
                 void operator()(const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst) const
                 {
+                    if (inFirst == inLast) return;
+
                     if (!type) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type"));
 
                     asIScriptEngine* engine = type.type_info->GetEngine();
@@ -444,7 +449,7 @@ namespace asdk {
                         typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
                         typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
                         typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
-                        for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
+                        for (; in_func(inFirst, inLast); out_func(outFirst, type_size), in_func(inFirst, type_size))
                         {
                             void* dst = &(*outFirst);
                             const void* src = &(*inFirst);
@@ -469,7 +474,7 @@ namespace asdk {
                             typedef increment<OutIterator> outIncr; typedef increment<InIterator> inIncr;
                             typename outIncr::functor_type out_func = outIncr::make(outFirst, type_size);
                             typename inIncr::functor_type in_func = inIncr::make(inFirst, type_size);
-                            for (; in_func(inLast, inFirst); out_func(outFirst, type_size), in_func(inFirst, type_size))
+                            for (; in_func(inFirst, inLast); out_func(outFirst, type_size), in_func(inFirst, type_size))
                             {
                                 void* dst = &(*outFirst);
                                 const void* src = &(*inFirst);
@@ -479,6 +484,66 @@ namespace asdk {
                     }
                 }
             } copy;
+
+            class construct
+            {
+            public:
+                inline
+                void class_object(const AngelScript::asType& type, void* memory) const
+                {
+                    asIScriptEngine* engine = type.type_info->GetEngine();
+                    if (!engine) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">::class_object: cannot get script engine"));
+
+                    void* obj_ptr = engine->CreateScriptObject(type.type_info);
+                    std::memcpy(memory, &obj_ptr, sizeof(void*));
+                }
+
+                inline
+                void operator()(const AngelScript::asType& type, void* memory) const
+                {
+                    if (!memory) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">: null memory location"));
+                    if (!type) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">: invalid type"));
+
+                    const int type_size = type.size();
+                    if (type_size <= 0) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">: invalid type::size"));
+
+                    if (type.is_class() && !type.is_handle())
+                    {
+                        if (type_size != sizeof(void*)) 
+                            throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">: invalid type::size for script class object != sizeof(void*)"));
+
+                        class_object(type, memory);
+                    }
+                    else
+                    {
+                        std::memset(memory, 0, type_size);
+                    }
+                }
+
+                inline
+                void operator()(const AngelScript::asType& type, void* memory, std::size_t count) const
+                {
+                    if (!memory) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">: null memory location"));
+                    if (!type) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">: invalid type"));
+
+                    const int type_size = type.size();
+                    if (type_size <= 0) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">: invalid type::size"));
+
+                    if (type.is_class() && !type.is_handle())
+                    {
+                        if (type_size != sizeof(void*)) 
+                            throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">: invalid type::size for script class object != sizeof(void*)"));
+
+                        unsigned char* memory_it = static_cast<unsigned char*>(memory);
+                        for (std::size_t i = 0; i < count; i += sizeof(void*))
+                            class_object(type, memory_it + i);
+                    }
+                    else
+                    {
+                        std::memset(memory, 0, type_size * count);
+                    }
+                }
+            } construct;
         }
     }
 }
