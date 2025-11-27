@@ -32,6 +32,12 @@
 #   endif // ASDK_ANGELSCRIPT_NS_QUALIFIER
 #endif // AS_NAMESPACE_QUALIFIER
 
+#include <string>
+#include <cassert>
+#include <cstring>
+#include <exception>
+#include <stdexcept>
+
 // AngelScript functions, types etc.
 namespace asdk {
     namespace AngelScript {
@@ -47,6 +53,7 @@ namespace asdk {
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asIScriptFunction;
 
         using ASDK_ANGELSCRIPT_NS_QUALIFIER asCreateScriptEngine;
+        using ASDK_ANGELSCRIPT_NS_QUALIFIER asGetActiveContext;
 
         namespace asECallConvTypes {
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asECallConvTypes;
@@ -158,6 +165,187 @@ namespace asdk {
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJLAST;
             using ASDK_ANGELSCRIPT_NS_QUALIFIER asCALL_THISCALL_OBJFIRST;
         } using namespace asECallConvTypes;
+    }
+
+    namespace AngelScript {
+        struct asType {
+            asITypeInfo* type_info;
+            int type_id;
+            asType() : type_info(0), type_id(asTYPEID_APPOBJECT) {}
+            asType(asITypeInfo& type_info) : type_info(&type_info), type_id(type_info.GetTypeId()) {}
+            asType(asIScriptEngine& engine, int type_id) : type_info(engine.GetTypeInfoById(type_id)), type_id(type_info ? asTYPEID_APPOBJECT : type_id) {}
+            bool is_void() const { return asTYPEID_VOID == type_id; }
+            bool is_arithmetic() const { if (is_class()) return false; return type_id > asTYPEID_VOID && type_id < asTYPEID_DOUBLE; }
+            bool is_handle() const { 
+                if (type_info) return 0 != (type_info->GetFlags() & asOBJ_ASHANDLE); 
+                return 0 != (type_id & asTYPEID_OBJHANDLE); 
+            }
+            bool is_enum() const {
+                if (type_info) return 0 != (type_info->GetFlags() & asOBJ_ENUM);
+                return type_id > asTYPEID_DOUBLE && type_id != asTYPEID_APPOBJECT; // enums have a type id larger than doubles
+            }
+            bool is_class() const { return !!type_info && !is_enum(); }
+
+            bool operator!() const {
+                return !type_info && (asTYPEID_APPOBJECT == type_id || type_id < 0);
+            }
+
+            const char* name() const {
+                if (!*this) return 0;
+                if (type_info)
+                    return type_info->GetName();
+                switch (type_id)
+                {
+                case asTYPEID_VOID: return "void";
+                case asTYPEID_BOOL: return "bool";
+                case asTYPEID_DOUBLE: return "double";
+                case asTYPEID_FLOAT: return "float";
+                case asTYPEID_INT16: return "int16";
+                case asTYPEID_INT32: return "int32";
+                case asTYPEID_INT64: return "int64";
+                case asTYPEID_UINT16: return "uint16";
+                case asTYPEID_UINT32: return "uint32";
+                case asTYPEID_UINT64: return "uint64";
+                }
+
+                return 0;
+            }
+
+            int size() const {
+                if (type_info)
+                {
+                    int type_id = type_info->GetTypeId();
+                    if (type_id & asTYPEID_MASK_OBJECT)
+                        return sizeof(void*);
+                    return type_info->GetSize();
+                }
+
+                switch (type_id)
+                {
+                case asTYPEID_VOID: return 0;
+                case asTYPEID_BOOL: return sizeof(bool);
+                case asTYPEID_DOUBLE: return sizeof(double);
+                case asTYPEID_FLOAT: return sizeof(float);
+                case asTYPEID_INT16: return sizeof(asINT16);
+                case asTYPEID_INT32: return sizeof(asINT32);
+                case asTYPEID_INT64: return sizeof(asINT64);
+                case asTYPEID_UINT16: return sizeof(asINT16);
+                case asTYPEID_UINT32: return sizeof(asINT32);
+                case asTYPEID_UINT64: return sizeof(asINT64);
+                }
+
+                return -1;
+            }
+        };
+    }
+
+    namespace algorithm {
+
+        namespace type_traits {
+            template<class T>
+            struct is_pointer {
+                static const bool value = false;
+            };
+            template<class T>
+            struct is_pointer<T*> {
+                static const bool value = sizeof(T*) == sizeof(void*);
+            };
+        }
+
+        template<class InIterator, class OutIterator>
+        inline
+        void copy(const AngelScript::asType& type, InIterator inFirst, InIterator inLast, OutIterator outFirst)
+        {
+            if (!type) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type"));
+
+            asIScriptEngine* engine = type.type_info->GetEngine();
+            if (!engine) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot get script engine"));
+
+            const int type_size = type.size();
+            if (type_size <= 0) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type::size"));
+
+            if (type.is_class() && (type.type_id & ~asTYPEID_MASK_SEQNBR))
+            {
+                bool handle_assigned = false;
+                if (type.is_handle())
+                {
+                    const std::string decl =
+                        std::string(type.name()) + "& opHndlAssign(const " + std::string(type.name()) + "&in)";
+                    asIScriptFunction* func = type.type_info->GetMethodByDecl(decl.c_str());
+                    if (func)
+                    {
+                        asIScriptContext* ctx = asGetActiveContext();
+                        if (!ctx) ctx = engine->RequestContext();
+                        if (0 != ctx->Prepare(func))
+                            ctx = engine->RequestContext();
+                        if (0 != ctx->Prepare(func))
+                            throw(std::logic_error(std::string("astd::copy<") + type.name() + ">: cannot prepare context for 'opHndlAssign' function"));
+                        for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                        {
+                            void* dst = &(*outFirst);
+                            const void* src = &(*inFirst);
+                            ctx->SetObject(dst);
+                            ctx->SetArgAddress(0, const_cast<void*>(src));
+                            // TODO: Handle errors
+                            ctx->Execute();
+                        }
+                        engine->ReturnContext(ctx);
+                        handle_assigned = true;
+                    }
+                }
+
+                if (!handle_assigned)
+                {
+                    if (sizeof(void*) != type_size) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: invalid type size != sizeof(void*)"));
+                    // ordinary value assign instead
+                    for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                    {
+                        void* dst = &(*outFirst);
+                        const void* src = &(*inFirst);
+                        const void* const &obj_ptr = *reinterpret_cast<void* const*>(dst); // made a reference for debbuging purposes
+                        if (!obj_ptr)
+                        {
+                            void* obj = engine->CreateScriptObjectCopy(const_cast<void*>(src), type.type_info);
+                            if (!obj) throw(std::runtime_error(std::string("astd::copy<") + type.name() + ">: cannot create copy of script object"));
+                            std::memcpy(dst, &obj, sizeof(void*)); // since we store just pointers
+                        }
+                        else
+                        {
+                            engine->AssignScriptObject(dst, const_cast<void*>(src), type.type_info);
+                        }
+                    }
+                }
+            }
+            else if (type.is_handle())
+            {
+                for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                {
+                    void* dst = &(*outFirst);
+                    const void* src = &(*inFirst);
+                    void* obj_ptr = *reinterpret_cast<void* const*>(dst);
+                    void* value_obj_ptr = *reinterpret_cast<void* const*>(src); // since source is reference, 'src' stores pointer to pointer
+                    engine->AddRefScriptObject(value_obj_ptr, type.type_info);
+                    if (obj_ptr)
+                        engine->ReleaseScriptObject(obj_ptr, type.type_info);
+                }
+            }
+            else
+            {
+                if (type_traits::is_pointer<InIterator>::value && type_traits::is_pointer<OutIterator>::value)
+                {
+                    void* dst = &(*outFirst);
+                    const void* src = &(*inFirst);
+                    const std::ptrdiff_t count = inLast - inFirst;
+                    std::memcpy(dst, src, type_size * count);
+                }
+                else for (; inLast != inFirst; ++outFirst, (void) ++inFirst)
+                {
+                    void* dst = &(*outFirst);
+                    const void* src = &(*inFirst);
+                    std::memcpy(dst, src, type_size);
+                }
+            }
+        }
     }
 }
 
@@ -1140,6 +1328,13 @@ namespace asdk {
                 return function_with_traits<func_traits, ClassT>(func_str, func);
             }
 
+            template<class ReturnT, class ClassT, class Arg0T>
+            reflect&
+            function(const std::string& func_str, ReturnT(ClassT::* func)(Arg0T) const) {
+                typedef type_traits::function<flags, T, ReturnT(*)(Arg0T), reflect&> func_traits;
+                return function_with_traits<func_traits, ClassT>(func_str, func);
+            }
+
             template<class FuncT>
             typename type_traits::function<flags, T, FuncT, reflect&, void(*)()>::type
             destructor(FuncT func) {
@@ -1169,7 +1364,7 @@ namespace asdk {
                 , typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type return_str
                 , FuncT func)
             {
-                const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + "&in)";
+                const std::string op_str = return_str + " opAssign(" + format_function_argument<const OtherT>(other_str) + ")";
             
                 typedef type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)> op_traits;
                 typedef typename op_traits::class_type class_type;
@@ -1902,7 +2097,7 @@ namespace asdk {
 
         public:
 
-            typename type_traits::reflect_helper<T, underlying_type>::type
+            underlying_type&//typename type_traits::reflect_helper<T, underlying_type>::type
             template_callback() { 
                 return template_callback(T::template_callback); 
             }
@@ -1946,6 +2141,11 @@ namespace asdk {
 
     using namespace asdk::reflection;
     using namespace asdk::exposing;
+    using namespace asdk::algorithm;
+    namespace type_traits {
+        using namespace asdk::reflection::type_traits;
+        using namespace asdk::algorithm::type_traits;
+    }
 }
 
 #undef ASDK_ARG
