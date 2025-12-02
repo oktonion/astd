@@ -1056,35 +1056,35 @@ namespace asdk {
 #           endif // ASDK_FUNCTION_TRAITS_STORAGE_ADD
 
             template<class FuncT>
-            struct function_traits : function_traits_storage<void> {};
+            struct function_traits_impl : function_traits_storage<void> {};
             template<ASDK_FUNCTION_ARGS_TYPES(10)>
-            struct function_traits<
-                function_traits_storage<ASDK_FUNCTION_ARGS_LIST(10)>
+            struct function_traits_impl<
+                function_traits_storage<ASDK_FUNCTION_ARGS_LIST(10)>*
             > : function_traits_storage<ASDK_FUNCTION_ARGS_LIST(10)> {};
 
             template<class ReturnT>
-            struct function_traits<ReturnT(*)()> : function_traits_storage<void, ReturnT>{};
+            struct function_traits_impl<ReturnT(**)()> : function_traits_storage<void, ReturnT>{};
 
 #           ifndef ASDK_FUNCTION_TRAITS
 #           if !defined(__BORLANDC__) // Borland C++ Builder has a bug of member function detection in template params
                 template<class ClassT, class ReturnT>
-                struct function_traits<ReturnT(ClassT::*)()> : function_traits_storage<ClassT, ReturnT> {};
+                struct function_traits_impl<ReturnT(ClassT::**)()> : function_traits_storage<ClassT, ReturnT> {};
                 template<class ClassT, class ReturnT>
-                struct function_traits<ReturnT(ClassT::*)() const> : function_traits_storage<ClassT, ReturnT> {};
-#               define ASDK_FUNCTION_TRAITS                                                                           \
-                template<class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                               \
-                struct function_traits<ReturnT(*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>                     \
-                : function_traits_storage<void, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};           \
-                template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                 \
-                struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>             \
-                    : function_traits_storage<ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};     \
-                template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                 \
-                struct function_traits<ReturnT(ClassT::*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)) const>       \
+                struct function_traits_impl<ReturnT(ClassT::**)() const> : function_traits_storage<ClassT, ReturnT> {};
+#               define ASDK_FUNCTION_TRAITS                                                                                          \
+                template<class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                                              \
+                struct function_traits_impl<ReturnT(**)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>                              \
+                : function_traits_storage<void, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};                          \
+                template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                                \
+                struct function_traits_impl<ReturnT(ClassT::**)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>                      \
+                    : function_traits_storage<ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};                    \
+                template<class ClassT, class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                                \
+                struct function_traits_impl<ReturnT(ClassT::**)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)) const>                \
                     : function_traits_storage<const ClassT, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};
 #           else
 #               define ASDK_FUNCTION_TRAITS                                                                           \
                 template<class ReturnT, ASDK_FUNCTION_ARGS_TYPES(ASDK_FUNCTION_ARGS_N)>                               \
-                struct function_traits<ReturnT(*)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))>                     \
+                struct function_traits_impl<ReturnT(**)(ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N))> \
                 : function_traits_storage<void, ReturnT, ASDK_FUNCTION_ARGS_LIST(ASDK_FUNCTION_ARGS_N)> {};
 #           endif
 
@@ -1150,6 +1150,10 @@ namespace asdk {
 
 #           undef ASDK_PARAM
 #           endif // ASDK_FUNCTION_ARGS_TYPES
+
+
+            template<class FuncT>
+            struct function_traits : function_traits_impl<FuncT*> {};
 
             template<bool = true
                 , bool = true, bool = true, bool = true, bool = true, bool = true
