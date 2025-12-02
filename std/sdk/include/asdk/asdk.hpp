@@ -792,14 +792,15 @@ namespace asdk {
                 other.engine = 0;
             }
 
-            ~expose() {
+
+            void dtor() {
                 if (!engine) return;
 
                 struct lambdas {
                     static void throw_an_error(const std::string& message) {
                         throw(std::logic_error(message.c_str()));
                     }
-                    
+
                 };
 
                 if (obj.empty())
@@ -837,6 +838,12 @@ namespace asdk {
                         }
                     }
                 }
+
+                engine = 0;
+            }
+
+            ~expose() {
+                dtor();
             }
 
         private:
@@ -919,6 +926,12 @@ namespace asdk {
             struct remove_reference<const T&> { typedef const T type; };
             template<class T>
             struct remove_reference<volatile T&> { typedef volatile T type; };
+
+            template<class T>
+            struct add_reference { typedef T& type; };
+            template<>
+            struct add_reference<void> { typedef void type; };
+
 
             template<class T>
             T declval();
@@ -1315,17 +1328,17 @@ namespace asdk {
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
-                    typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
-                    typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
-                    typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
-                    typedef typename conditional<
-                        typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
-                           is_compatible_with1::value == bool(true)
-                        || is_compatible_with2::value == bool(true)
-                        || is_compatible_with3::value == bool(true)
-                        || is_compatible_with4::value == bool(true)
-                    >::type is_compatible_with;
-                }; 
+typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
+typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
+typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
+typedef typename conditional<
+    typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
+    is_compatible_with1::value == bool(true)
+    || is_compatible_with2::value == bool(true)
+    || is_compatible_with3::value == bool(true)
+    || is_compatible_with4::value == bool(true)
+>::type is_compatible_with;
+                };
                 typedef typename cdecl_objlast::is_compatible_with is_compatible_with_cdecl_objlast;
 
                 struct cdecl_objfirst {
@@ -1352,15 +1365,15 @@ namespace asdk {
                     typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
                     typedef typename conditional<
                         typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
-                           is_compatible_with1::value == bool(true)
+                        is_compatible_with1::value == bool(true)
                         || is_compatible_with2::value == bool(true)
                         || is_compatible_with3::value == bool(true)
                         || is_compatible_with4::value == bool(true)
                     >::type is_compatible_with;
-                }; 
+                };
                 typedef typename cdecl_objfirst::is_compatible_with is_compatible_with_cdecl_objfirst;
 
-                
+
                 struct cdecl_factorycall {
                     typedef typename function_traits_storage_add<
                         return_reference_storage,
@@ -1385,21 +1398,21 @@ namespace asdk {
                     typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
                     typedef typename conditional<
                         typename conditional<true_type, false_type, flags::is_reference == bool(true)>::type, false_type,
-                           is_compatible_with1::value == bool(true)
+                        is_compatible_with1::value == bool(true)
                         || is_compatible_with2::value == bool(true)
                         || is_compatible_with3::value == bool(true)
                         || is_compatible_with4::value == bool(true)
                     >::type is_compatible_with;
-                }; 
+                };
                 typedef typename cdecl_factorycall::is_compatible_with is_compatible_with_cdecl_factorycall;
 
-                typedef 
-                typename
-                conditional<ReflectionT, arg_type_ph,
+                typedef
+                    typename
+                    conditional<ReflectionT, arg_type_ph,
                     is_compatible_with_cdecl_objlast::value == bool(true) ||
                     is_compatible_with_cdecl_objfirst::value == bool(true) ||
                     is_compatible_with_cdecl_factorycall::value == bool(true)
-                >::type type;
+                    >::type type;
 
                 typedef function_traits<FuncT> func_traits_type;
                 typedef typename func_traits_type::class_type class_type;
@@ -1437,9 +1450,16 @@ namespace asdk {
                 typedef FuncT function_type;
                 typedef function_traits<DeclT> decl_traits_type;
                 typedef typename decl_traits_type::storage decl_traits_storage;
+                typedef Flags flags;
 
                 typedef function_traits<FuncT> func_traits_type;
-                typedef typename func_traits_type::return_type return_type;
+                typedef typename func_traits_type::return_type ReturnT;
+                typedef typename 
+                conditional<
+                    typename add_reference<ReturnT>::type,
+                    ReturnT,
+                    flags::is_reference == bool(true) && is_same<ReturnT, ClassT>::value == bool(true)
+                >::type return_type;
                 typedef typename func_traits_type::class_type class_type;
                 typedef typename func_traits_type::arg1_type arg1_type;
                 typedef typename arg_last<func_traits_type>::type argN_type;
@@ -1580,6 +1600,16 @@ namespace asdk {
             struct destructor:
                 function <Flags, ClassT, FuncT, typename conditional<arg_type_ph, ReflectionT, Flags::is_reference>::type,
                 DeclT>
+            { };
+        }
+
+        // reference counting and GC
+        namespace type_traits {
+            template<class Flags, class ClassT, class FuncT, class ReflectionT>
+            struct reference_counting :
+                function <Flags, ClassT, FuncT, 
+                typename conditional<ReflectionT, arg_type_ph, Flags::is_reference>::type,
+                void(*)()>
             { };
         }
 
@@ -1873,6 +1903,44 @@ namespace asdk {
                 return destructor(dtor);
             }
 
+            template<class FuncT>
+            typename type_traits::reference_counting<flags, T, FuncT, reflect&>::type
+            add_reference(FuncT func) {
+                typedef type_traits::reference_counting<flags, T, FuncT, reflect&> func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef typename func_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL = 
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                    asCALL_CDECL)
+                    : (
+                    asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, "void addref()", asBEHAVE_ADDREF, asFunc, asCALL);
+                return *this;
+            }
+
+            template<class FuncT>
+            typename type_traits::reference_counting<flags, T, FuncT, reflect&>::type
+            release_reference(FuncT func) {
+                typedef type_traits::reference_counting<flags, T, FuncT, reflect&> func_traits;
+                typedef typename func_traits::obj_type obj_type;
+                typedef typename func_traits::class_type class_type;
+                typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
+                const asECallConvTypes asCALL =
+                    type_traits::is_same<class_type, void>::value ? (
+                        func_traits::is_compatible_with_cdecl_objfirst::value ? asCALL_CDECL_OBJFIRST :
+                        func_traits::is_compatible_with_cdecl_objlast::value ? asCALL_CDECL_OBJLAST :
+                        asCALL_CDECL)
+                    : (
+                        asCALL_THISCALL);
+                const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
+                asdk::expose(*asIScriptEngine, name, "void release()", asBEHAVE_RELEASE, asFunc, asCALL);
+                return *this;
+            }
+
             template<class OtherT, class ReturnT, class FuncT>
             typename type_traits::function<flags, T, FuncT, reflect&, ReturnT(*)(OtherT)>::type
             operator_assign(typename type_traits::function<flags, T, FuncT, const std::string&, ReturnT(*)(OtherT)>::type other_str
@@ -1898,17 +1966,17 @@ namespace asdk {
 
             template<class OtherT, class FuncT>
             typename type_traits::function<flags, T, FuncT, reflect&, T(*)(OtherT)>::type
-            operator_assign(typename type_traits::function<flags, T, FuncT, const std::string&, T(*)(OtherT)>::type other_str
+            operator_assign(typename type_traits::function<flags, T, FuncT, const std::string&, T&(*)(OtherT)>::type other_str
                 , FuncT func)
             {
-                return operator_assign<OtherT, T, FuncT>(other_str, name, func);
+                return operator_assign<OtherT, T, FuncT>(other_str, name + "&", func);
             }
 
             template<class FuncT>
-            typename type_traits::function<flags, T, FuncT, reflect&, T(*)(const T&)>::type
+            typename type_traits::function<flags, T, FuncT, reflect&, T&(*)(const T&)>::type
             operator_assign(FuncT func)
             {
-                return operator_assign<const T&>(name, func);
+                return operator_assign<const T&>(name + "&", func);
             }
 
             template<class OtherT>
@@ -1916,13 +1984,13 @@ namespace asdk {
             operator_assign(const std::string& other_str
                 , ASDK_SFINAE_DEFAULT_FUNCTION_ARG(((*(T*)(0)) = (*(const OtherT*)(0)))))
             {
-                return operator_assign<T, OtherT>(other_str, name, static_cast<T(*)(T&, const OtherT&)>(opAssign));
+                return operator_assign<T, OtherT>(other_str, name + "&", static_cast<T & (*)(T&, const OtherT&)>(opAssign));
             }
 
             reflect&
             operator_assign(int(*)[sizeof((*(T*)(0)) = (*(const T*)(0)))] = 0)
             {
-                T(*op_func)(T&, const T&) = &opAssign;
+                T& (*op_func)(T&, const T&) = &opAssign;
                 return operator_assign(op_func);
             }
             
@@ -2532,7 +2600,7 @@ namespace asdk {
             }
 
             template<class ThisT, class OtherT>
-            inline static T opAssign(ThisT& lhs, const OtherT &rhs) // objfirst
+            inline static T& opAssign(ThisT& lhs, const OtherT &rhs) // objfirst
             {
                 return lhs = rhs;
             }
