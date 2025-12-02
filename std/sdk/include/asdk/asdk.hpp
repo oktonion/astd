@@ -239,6 +239,195 @@ namespace asdk {
 
                 return -1;
             }
+
+            int addref() {
+                if (type_info) return type_info->AddRef(); return 0;
+            }
+            int release() {
+                if (type_info) return type_info->Release(); return 0;
+            }
+            asType subtype(int index = 0) const {
+                asType result;
+                if (type_info)
+                {
+                    result.type_info = type_info->GetSubType(index);
+                    if (result.type_info) result.type_id = result.type_info->GetTypeId();
+                }
+                return result;
+            }
+            asType underlying_type() const {
+                asType result;
+                if (is_enum())
+                    result.type_id = type_info->GetUnderlyingTypeId();
+                return result;
+            }
+        };
+    }
+
+    namespace AngelScript {
+        struct asGCReference {
+            template<class T>
+            struct Template;
+
+            asGCReference(const asType& type)
+                : gc()
+                , ref()
+            {
+                ctor(type, &dummy_deleter);
+            }
+
+            template<class Deleter>
+            asGCReference(const asType& type, const Deleter &d)
+                : gc()
+                , ref()
+            {
+                ctor(type, d);
+            }
+            ~asGCReference() {
+                ref.type.release();
+                deleter.destruct(deleter.ptr);
+            }
+            asGCReference(const asGCReference& other)
+                : gc(other.gc)
+                , ref(other.ref)
+                , deleter(other.deleter)
+            {
+                gc.flag = false;
+                ref.count = 1;
+                static_cast<void>(ref.type.addref());
+                deleter.ptr = other.deleter.make_copy(other.deleter.ptr);
+            }
+            template<class Deleter>
+            asGCReference(const asGCReference& other, const Deleter& d)
+                : gc()
+                , ref()
+            {
+                ctor(other.ref.type, d);
+            }
+            void swap(asGCReference& other) throw()
+            {
+                if (&other == this) return;
+
+                std::swap(gc, other.gc);
+                std::swap(ref, other.ref);
+                std::swap(deleter, other.deleter);
+            }
+            asGCReference& operator=(const asGCReference& other)
+            {
+                if (&other != this)
+                    asGCReference(other).swap(*this);
+                return *this;
+            }
+
+            virtual void enumrefs(asIScriptEngine*) {}
+            virtual void releaserefs(asIScriptEngine*) {}
+        
+            void setgcflag() { gc.flag = true; }
+            bool getgcflag() const { return gc.flag; }
+            void addref() { gc.flag = false; asAtomicInc(ref.count); }
+            void release() { 
+                gc.flag = false; 
+                if (0 == asAtomicDec(ref.count))
+                {
+                    // When reaching 0 no more references to this instance
+                    // exists and the object should be destroyed
+                    deleter.call(deleter.ptr, this);
+                }
+            }
+            int getrefcount() const { return ref.count; }
+
+            struct meta {
+                static const char* enumrefs_cstr() { return "void enumrefs(int&in)"; }
+                static const char* releaserefs_cstr() { return "void releaserefs(int&in)"; }
+
+                static const char* setgcflag_cstr() { return "void setgcflag()"; }
+                static const char* getgcflag_cstr() { return "bool getgcflag()"; }
+                static const char* addref_cstr() { return "void addref()"; }
+                static const char* release_cstr() { return "void release()"; }
+                static const char* getrefcount_cstr() { return "int getrefcount()"; }
+            };
+        protected:
+
+            const asType& type() const {
+                return ref.type;
+            }
+
+        private:
+            struct {
+                bool flag;
+            } gc;
+            struct {
+                mutable int count;
+                asType type;
+            } ref;
+
+            struct {
+                void* ptr;
+                void (*call)(void*, void*);
+                void (*destruct)(void*);
+                void* (*make_copy)(const void*);
+            } deleter;
+            static void dummy_deleter(asGCReference*) {  }
+            template<class Deleter>
+            void ctor(const asType& type, const Deleter& d)
+            {
+                gc.flag = false;
+                ref.count = 1;
+                ref.type = type;
+                static_cast<void>(ref.type.addref());
+
+                struct lambdas
+                {
+                    typedef Deleter deleter_type;
+                    static void deleter_call(void* deleter, void* ptr) {
+                        (*reinterpret_cast<deleter_type*>(deleter))(
+                            reinterpret_cast<asGCReference*>(ptr)
+                            );
+                    }
+                    static void deleter_destruct(void* deleter) { delete (reinterpret_cast<deleter_type*>(deleter)); }
+                    static void* deleter_make_copy(const void* deleter) { if (!deleter) return 0; return new deleter_type(*reinterpret_cast<const deleter_type*>(deleter)); }
+                };
+
+                deleter.ptr = new Deleter(d);
+                deleter.call = &lambdas::deleter_call;
+                deleter.destruct = &lambdas::deleter_destruct;
+                deleter.make_copy = &lambdas::deleter_make_copy;
+            }
+        };
+
+        template<class T>
+        struct asGCReference::Template
+            : asGCReference
+        {
+            template<class Deleter>
+            Template(const asType& type, const Deleter &d = &this_deleter)
+                : asGCReference(type, d)
+            { }
+            Template(const asType & type, T& that)
+                : asGCReference(type, deleter(that))
+            { }
+            template<class Deleter>
+            Template(const Template& other, const Deleter & d)
+                : asGCReference(other, d)
+            { }
+            Template(const Template& other, T& that)
+                : asGCReference(other, deleter(that))
+            { }
+
+        private:
+            static void this_deleter(asGCReference* this_type) {
+                delete dynamic_cast<T*>(this_type);
+            }
+
+            struct deleter {
+                T* ptr;
+                void operator()(asGCReference* ref)
+                {
+                    delete ptr;
+                }
+                deleter(T& other) : ptr(&other) {}
+            };
+        
         };
     }
 
@@ -572,18 +761,27 @@ namespace asdk {
                 : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(-1) {}
             expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flag1, asEObjTypeFlags flag2, asEObjTypeFlags flag3)
                 : engine(&engine), obj(obj), objSize(objSize), decl(), func(func), callConv(asECallConvTypes()), flags(flag1 | flag2 | flag3) {
-                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
-                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+                const bool is_class = 0 != (expose::flags & asOBJ_APP_CLASS);
+                const bool is_ref = 0 != (expose::flags & asOBJ_REF);
+                const bool is_value = 0 != (expose::flags & asOBJ_VALUE);
+                if (!is_class && !is_ref) expose::flags |= asOBJ_APP_CLASS;
+                if (!is_value && !is_ref) expose::flags |= asOBJ_VALUE;
             }
             expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flag1, asEObjTypeFlags flag2)
                 : engine(&engine), obj(obj), objSize(objSize), decl(), func(func), callConv(asECallConvTypes()), flags(flag1 | flag2) {
-                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
-                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+                const bool is_class = 0 != (expose::flags & asOBJ_APP_CLASS);
+                const bool is_ref = 0 != (expose::flags & asOBJ_REF);
+                const bool is_value = 0 != (expose::flags & asOBJ_VALUE);
+                if (!is_class && !is_ref) expose::flags |= asOBJ_APP_CLASS;
+                if (!is_value && !is_ref) expose::flags |= asOBJ_VALUE;
             }
             expose(asIScriptEngine& engine, const std::string& obj, int objSize, asEObjTypeFlags flags)
                 : engine(&engine), obj(obj), objSize(objSize), decl()    , func(func), callConv(asECallConvTypes()), flags(flags) {
-                if (0 == (expose::flags & asOBJ_APP_CLASS)) expose::flags |= asOBJ_APP_CLASS;
-                if (0 == (expose::flags & asOBJ_VALUE) && 0 == (expose::flags & asOBJ_REF)) expose::flags |= asOBJ_VALUE;
+                const bool is_class = 0 != (expose::flags & asOBJ_APP_CLASS);
+                const bool is_ref = 0 != (expose::flags & asOBJ_REF);
+                const bool is_value = 0 != (expose::flags & asOBJ_VALUE);
+                if (!is_class && !is_ref) expose::flags |= asOBJ_APP_CLASS;
+                if (!is_value && !is_ref) expose::flags |= asOBJ_VALUE;
             }
             expose(asIScriptEngine& engine, const std::string& obj, const std::string& decl, asEBehaviours beh, asSFuncPtr func, asECallConvTypes callConv)
                 : engine(&engine), obj(obj), objSize()       , decl(decl), func(func), callConv(callConv), flags(beh) {}
@@ -615,7 +813,7 @@ namespace asdk {
                     {
                         if (asQWORD(-1) == flags) flags = 0;
 
-                        if (0 != (flags & asOBJ_APP_CLASS))
+                        if (0 != (flags & asOBJ_APP_CLASS) || 0 != (flags & asOBJ_REF))
                         {
                             if (0 > engine->RegisterObjectType(obj.c_str(), objSize, flags))
                                 lambdas::throw_an_error("RegisterObjectType");
@@ -1005,6 +1203,8 @@ namespace asdk {
                 , int ObjFlag1 = 0
                 , int ObjFlag2 = 0
                 , int ObjFlag3 = 0
+                , int ObjFlag4 = 0
+                , int ObjFlag5 = 0
             >
             struct reflect_flags{
                 static const bool is_template =
@@ -1012,10 +1212,38 @@ namespace asdk {
                         (ObjFlag1 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
                             (ObjFlag2 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
                                 (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
-                                    false))))
+                                    (ObjFlag4 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                                        (ObjFlag5 & AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE) ? true : (
+                                            false))))))
+                    ;
+                static const bool is_reference =
+                    (ObjTypeT & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                        (ObjFlag1 & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                            (ObjFlag2 & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                                (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                                    (ObjFlag4 & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                                        (ObjFlag5 & AngelScript::asEObjTypeFlags::asOBJ_REF) ? true : (
+                                            false))))))
+                    ;
+                static const bool is_class =
+                    (ObjTypeT & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                        (ObjFlag1 & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                            (ObjFlag2 & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                                (ObjFlag3 & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                                    (ObjFlag4 & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                                        (ObjFlag5 & AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS) ? true : (
+                                            false))))))
                     ;
 
-                static const AngelScript::asEObjTypeFlags::type object_type = AngelScript::asEObjTypeFlags::type(ObjTypeT);
+                typedef 
+                typename
+                type_traits::conditional<
+                    void,
+                    AngelScript::asEObjTypeFlags::type,
+                    (reflect_flags::is_reference && reflect_flags::is_class) == bool(true)
+                >::type asEObjTypeFlags;
+
+                static const asEObjTypeFlags object_type = asEObjTypeFlags(ObjTypeT);
             };
 
             template<class Flags, class ClassT, class FuncT, class ReflectionT
@@ -1025,6 +1253,23 @@ namespace asdk {
                 typedef typename decl_traits_type::storage decl_traits_storage;
 
                 typedef Flags flags;
+
+                
+                typedef
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, ClassT*>,
+                    flags::is_reference == bool(false)
+                >::type return_pointer_storage;
+
+                typedef
+                typename
+                conditional<
+                    function_traits_storage<void, void>,
+                    function_traits_storage<void, ClassT&>,
+                    flags::is_reference == bool(false)
+                >::type return_reference_storage;
 
                 typedef
                 typename
@@ -1074,7 +1319,7 @@ namespace asdk {
                     typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
                     typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
                     typedef typename conditional<
-                        true_type, false_type,
+                        typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
                            is_compatible_with1::value == bool(true)
                         || is_compatible_with2::value == bool(true)
                         || is_compatible_with3::value == bool(true)
@@ -1090,8 +1335,7 @@ namespace asdk {
                     >::type storage1;
                     typedef typename function_traits_storage_add<
                         class_reference_storage,
-                        ti_decl_pointer_storage,
-                        decl_traits_storage
+                        ti_decl_pointer_storage
                     >::type storage2;
                     typedef typename function_traits_storage_add<
                         class_pointer_storage,
@@ -1107,7 +1351,7 @@ namespace asdk {
                     typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
                     typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
                     typedef typename conditional<
-                        true_type, false_type,
+                        typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
                            is_compatible_with1::value == bool(true)
                         || is_compatible_with2::value == bool(true)
                         || is_compatible_with3::value == bool(true)
@@ -1116,11 +1360,45 @@ namespace asdk {
                 }; 
                 typedef typename cdecl_objfirst::is_compatible_with is_compatible_with_cdecl_objfirst;
 
+                
+                struct cdecl_factorycall {
+                    typedef typename function_traits_storage_add<
+                        return_reference_storage,
+                        ti_decl_reference_storage
+                    >::type storage1;
+                    typedef typename function_traits_storage_add<
+                        return_reference_storage,
+                        ti_decl_pointer_storage
+                    >::type storage2;
+                    typedef typename function_traits_storage_add<
+                        return_pointer_storage,
+                        ti_decl_reference_storage
+                    >::type storage3;
+                    typedef typename function_traits_storage_add<
+                        return_pointer_storage,
+                        ti_decl_pointer_storage
+                    >::type storage4;
+
+                    typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
+                    typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
+                    typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
+                    typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
+                    typedef typename conditional<
+                        typename conditional<true_type, false_type, flags::is_reference == bool(true)>::type, false_type,
+                           is_compatible_with1::value == bool(true)
+                        || is_compatible_with2::value == bool(true)
+                        || is_compatible_with3::value == bool(true)
+                        || is_compatible_with4::value == bool(true)
+                    >::type is_compatible_with;
+                }; 
+                typedef typename cdecl_factorycall::is_compatible_with is_compatible_with_cdecl_factorycall;
+
                 typedef 
                 typename
                 conditional<ReflectionT, arg_type_ph,
                     is_compatible_with_cdecl_objlast::value == bool(true) ||
-                    is_compatible_with_cdecl_objfirst::value == bool(true)
+                    is_compatible_with_cdecl_objfirst::value == bool(true) ||
+                    is_compatible_with_cdecl_factorycall::value == bool(true)
                 >::type type;
 
                 typedef function_traits<FuncT> func_traits_type;
@@ -1295,6 +1573,16 @@ namespace asdk {
             };
         } // namespace type_traits
 
+        // destructor
+        namespace type_traits {
+            template<class Flags, class ClassT, class FuncT, class ReflectionT
+                , class DeclT = arg_type_ph(*)(arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph, arg_type_ph)>
+            struct destructor:
+                function <Flags, ClassT, FuncT, typename conditional<arg_type_ph, ReflectionT, Flags::is_reference>::type,
+                DeclT>
+            { };
+        }
+
         // reflect_helper
         namespace type_traits {
             struct reflect_template_callback_tester
@@ -1356,7 +1644,10 @@ namespace asdk {
                 bool floating_point;
                 bool primitive_type;
                 bool class_or_struct;
+                bool ref;
                 bool c_array;
+                bool enum_class;
+                bool handle;
             } is;
         };
 
@@ -1366,14 +1657,20 @@ namespace asdk {
             , AngelScript::asEObjTypeFlags::type ObjFlag1 = type_traits::reflect_flags<>::object_type
             , AngelScript::asEObjTypeFlags::type ObjFlag2 = type_traits::reflect_flags<>::object_type
             , AngelScript::asEObjTypeFlags::type ObjFlag3 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag4 = type_traits::reflect_flags<>::object_type
+            , AngelScript::asEObjTypeFlags::type ObjFlag5 = type_traits::reflect_flags<>::object_type
         >
         struct reflect
         {
             enum { sizeof_T = sizeof(T), sizeof_Tx2 = sizeof_T * 2 };
-            typedef type_traits::reflect_flags<ObjTypeT, ObjFlag1, ObjFlag2, ObjFlag3> flags;
+            typedef type_traits::reflect_flags<ObjTypeT, ObjFlag1, ObjFlag2, ObjFlag3, ObjFlag4, ObjFlag5> flags;
+
+            typedef char(&type_can_be_reference_or_class)[(reflect::flags::is_reference && reflect::flags::is_class) ? -1 : 1];
+            typedef char(&type_can_be_reference_or_class_assert)[sizeof(reflect::type_can_be_reference_or_class)];
 
             typedef AngelScript::asITypeInfo asITypeInfo;
             typedef AngelScript::asECallConvTypes::type asECallConvTypes;
+            typedef AngelScript::asEBehaviours::type asEBehaviours;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
                 , const object_traits& object_traits) : asIScriptEngine(&asIScriptEngine), name(name) {
@@ -1406,7 +1703,8 @@ namespace asdk {
             template<class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)()>::type
             constructor(FuncT func) {
-                const char* ctor_cstr = flags::is_template ? "void ctor(int&in)" : "void ctor()";
+                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string ctor_str = flags::is_template ? (return_str + " ctor(int& in)") : (return_str + " ctor()");
 
                 typedef type_traits::constructor<flags, T, FuncT, reflect&, void(*)()> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -1418,8 +1716,11 @@ namespace asdk {
                     asCALL_CDECL)
                     : (
                     asCALL_THISCALL);
+                const asEBehaviours asBEHAVE = ctor_traits::is_compatible_with_cdecl_factorycall::value 
+                    ? asBEHAVE_FACTORY 
+                    : asBEHAVE_CONSTRUCT;
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, ctor_cstr, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE, asFunc, asCALL);
                 return *this;
             }
 
@@ -1437,7 +1738,8 @@ namespace asdk {
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T)>::type
             constructor(const std::string& arg1_str, FuncT func) {
-                const std::string ctor_str = (flags::is_template ? "void ctor(int&in, " : "void ctor(") + format_function_argument<Arg1T>(arg1_str) + ")";
+                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string ctor_str = (flags::is_template ? (return_str + " ctor(int&in, ") : (return_str + " ctor(")) + format_function_argument<Arg1T>(arg1_str) + ")";
 
                 typedef type_traits::constructor<flags, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
                 typedef typename ctor_traits::class_type class_type;
@@ -1449,8 +1751,11 @@ namespace asdk {
                     asCALL_CDECL)
                     : (
                     asCALL_THISCALL);
+                const asEBehaviours asBEHAVE = ctor_traits::is_compatible_with_cdecl_factorycall::value
+                    ? asBEHAVE_FACTORY
+                    : asBEHAVE_CONSTRUCT;
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE, asFunc, asCALL);
                 return *this;
             }
             template<class Arg1T>
@@ -1469,7 +1774,8 @@ namespace asdk {
             template<class Arg1T, class Arg2T, class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
             constructor(const std::string& arg1_str, const std::string& arg2_str, FuncT func) {
-                const std::string ctor_str = (flags::is_template ? "void ctor(int&in, " : "void ctor(") 
+                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string ctor_str = (flags::is_template ? (return_str + " ctor(int&in, ") : (return_str + " ctor("))
                     + format_function_argument<Arg1T>(arg1_str) 
                     + ", " 
                     + format_function_argument<Arg1T>(arg2_str) 
@@ -1485,8 +1791,11 @@ namespace asdk {
                     asCALL_CDECL)
                     : (
                     asCALL_THISCALL);
+                const asEBehaviours asBEHAVE = ctor_traits::is_compatible_with_cdecl_factorycall::value
+                    ? asBEHAVE_FACTORY
+                    : asBEHAVE_CONSTRUCT;
                 const AngelScript::asSFuncPtr asFunc = func_ptr_convert::call(func);
-                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE_CONSTRUCT, asFunc, asCALL);
+                asdk::expose(*asIScriptEngine, name, ctor_str, asBEHAVE, asFunc, asCALL);
                 return *this;
             }
             template<class Arg1T, class Arg2T>
@@ -1542,9 +1851,9 @@ namespace asdk {
             }
 
             template<class FuncT>
-            typename type_traits::function<flags, T, FuncT, reflect&, void(*)()>::type
+            typename type_traits::destructor<flags, T, FuncT, reflect&, void(*)()>::type
             destructor(FuncT func) {
-                typedef type_traits::function<flags, T, FuncT, reflect&, void(*)()> func_traits;
+                typedef type_traits::destructor<flags, T, FuncT, reflect&, void(*)()> func_traits;
                 typedef typename func_traits::obj_type obj_type;
                 typedef typename func_traits::class_type class_type;
                 typedef type_traits::func_ptr_converter<FuncT, class_type> func_ptr_convert;
@@ -1560,7 +1869,7 @@ namespace asdk {
                 return *this;
             }
 
-            reflect& destructor() {
+            typename type_traits::destructor<flags, T, void(*)(), reflect&, void(*)()>::type destructor() {
                 return destructor(dtor);
             }
 
@@ -2018,13 +2327,16 @@ namespace asdk {
             {
                 using namespace AngelScript;
 
-                asDWORD flags = ObjTypeT | ObjFlag1 | ObjFlag2 | ObjFlag3;
+                asDWORD flags = ObjTypeT | ObjFlag1 | ObjFlag2 | ObjFlag3 | ObjFlag4 | ObjFlag5;
                 const bool is_pod = (0 != (flags & asOBJ_POD));
                 const bool is_enum = (0 != (flags & asOBJ_ENUM));
                 const bool is_union = (0 != (flags & asOBJ_APP_CLASS_UNION));
                 const bool is_template = (0 != (flags & asOBJ_TEMPLATE));
                 const bool is_all_ints = (0 != (flags & asOBJ_APP_CLASS_ALLINTS));
                 const bool is_all_floats = (0 != (flags & asOBJ_APP_CLASS_ALLFLOATS));
+                const bool supports_handles = (0 != (flags & asOBJ_ASHANDLE));
+                const bool supports_values = (0 != (flags & asOBJ_VALUE));
+                const bool supports_GC = (0 != (flags & asOBJ_GC));
 
                 if (object_traits.is.floating_point)
                     flags = asOBJ_APP_FLOAT;
@@ -2033,7 +2345,9 @@ namespace asdk {
 
                 if (object_traits.is.class_or_struct)
                 {
-                    flags = asOBJ_APP_CLASS;
+                    if (object_traits.is.class_or_struct)
+                        flags = asOBJ_APP_CLASS;
+
                     if (object_traits.has.default_constructor)
                         flags |= asOBJ_APP_CLASS_CONSTRUCTOR;
                     if (object_traits.has.custom_destructor)
@@ -2047,6 +2361,10 @@ namespace asdk {
                     if (is_all_floats)
                         flags |= asOBJ_APP_CLASS_ALLFLOATS;
                 }
+                else if (object_traits.is.ref)
+                {
+                    flags = asOBJ_REF;
+                }
 
                 if (object_traits.is.c_array)
                     flags = asOBJ_APP_ARRAY;
@@ -2054,6 +2372,10 @@ namespace asdk {
                 if (is_pod) flags |= asOBJ_POD;
                 if (is_enum) flags |= asOBJ_ENUM;
                 if (is_template) flags |= asOBJ_TEMPLATE;
+
+                if (supports_handles) flags |= asOBJ_ASHANDLE;
+                if (supports_values) flags |= asOBJ_VALUE;
+                if (supports_GC) flags |= asOBJ_GC;
 
                 const AngelScript::asEObjTypeFlags::type all_flags32 =
                     AngelScript::asEObjTypeFlags::type(flags);
@@ -2258,19 +2580,22 @@ namespace asdk {
                 , bool has_custom_copy_constructor
             ) {
                 object_traits result;
-                const asDWORD flags = ObjTypeT |ObjFlag1 | ObjFlag2 | ObjFlag3;
+                const asDWORD flags = ObjTypeT |ObjFlag1 | ObjFlag2 | ObjFlag3 | ObjFlag4 | ObjFlag5;
 
                 result.has.default_constructor = has_default_constructor;
                 result.has.custom_destructor = has_custom_destructor;
                 result.has.custom_assigment_operator = has_custom_assigment_operator;
                 result.has.custom_copy_constructor = has_custom_copy_constructor;
 
-                result.is.class_or_struct = true; 
+                result.is.handle = 0 != (flags & asOBJ_ASHANDLE);
+                result.is.enum_class = 0 != (flags & asOBJ_ENUM);
+                result.is.ref = 0 != (flags & asOBJ_REF);
+                result.is.class_or_struct = !result.is.ref;
                 result.is.c_array = false;
                 result.is.floating_point = false;
                 result.is.primitive_type = false;
 
-                if (result.is.class_or_struct)
+                if (result.is.class_or_struct || result.is.ref)
                 {
                     if (0 != (flags & asOBJ_APP_CLASS_CONSTRUCTOR)) result.has.default_constructor = true;
                     if (0 != (flags & asOBJ_APP_CLASS_DESTRUCTOR)) result.has.custom_destructor = true;
@@ -2309,15 +2634,16 @@ namespace asdk {
         };
 
 
+
         template<class T
-            , AngelScript::asEObjTypeFlags::type ObjFlag1
             , AngelScript::asEObjTypeFlags::type ObjFlag2
             , AngelScript::asEObjTypeFlags::type ObjFlag3
+            , AngelScript::asEObjTypeFlags::type ObjFlag4
         >
-        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, ObjFlag3>
-            : reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
+        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag2, ObjFlag3, ObjFlag4>
+            : reflect<T, ObjFlag2, ObjFlag3, ObjFlag4, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
         {
-            typedef reflect<T, AngelScript::asEObjTypeFlags::asOBJ_APP_CLASS, ObjFlag1, ObjFlag2, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
+            typedef reflect<T, ObjFlag2, ObjFlag3, ObjFlag4, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
                 , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
