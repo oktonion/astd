@@ -266,6 +266,7 @@ namespace asdk {
 
     namespace AngelScript {
         struct asGCReference {
+
             template<class T>
             struct Template;
 
@@ -470,7 +471,7 @@ namespace asdk {
                         type(cmp_not_equal_type not_equal, incr_type incr) : incr(incr), not_equal(not_equal) {}
                         void operator()(Iterator& it, int type_size) const { return incr(it, type_size); }
                         bool operator()(const Iterator &lhs, const Iterator& rhs) const { return not_equal(lhs, rhs); }
-                        bool operator!() const { return !incr || !equal; }
+                        bool operator!() const { return !incr || !not_equal; }
                     };
                     
                     inline static void pre_incr(Iterator& it, int) { ++it; }
@@ -1175,6 +1176,8 @@ namespace asdk {
 
             template<class FuncT>
             struct function_traits : function_traits_impl<FuncT*> {};
+            template<class FuncT>
+            struct function_traits<FuncT&> : function_traits_impl<FuncT*> {};
 
             template<bool = true
                 , bool = true, bool = true, bool = true, bool = true, bool = true
