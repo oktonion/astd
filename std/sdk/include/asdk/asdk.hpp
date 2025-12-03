@@ -354,15 +354,15 @@ namespace asdk {
             }
 
         private:
-            struct {
+            struct gc_type {
                 bool flag;
             } gc;
-            struct {
+            struct ref_type {
                 mutable int count;
                 asType type;
             } ref;
 
-            struct {
+            struct deleter_type {
                 void* ptr;
                 void (*call)(void*, void*);
                 void (*destruct)(void*);
@@ -380,6 +380,7 @@ namespace asdk {
                 struct lambdas
                 {
                     typedef Deleter deleter_type;
+                    typedef asGCReference asGCReference;
                     static void deleter_call(void* deleter, void* ptr) {
                         (*reinterpret_cast<deleter_type*>(deleter))(
                             reinterpret_cast<asGCReference*>(ptr)
@@ -930,6 +931,8 @@ namespace asdk {
 
             template<class T>
             struct add_reference { typedef T& type; };
+            template<class T>
+            struct add_reference<T&> { typedef T& type; };
             template<>
             struct add_reference<void> { typedef void type; };
 
@@ -1281,7 +1284,7 @@ namespace asdk {
                 type_traits::conditional<
                     void,
                     AngelScript::asEObjTypeFlags::type,
-                    (reflect_flags::is_reference && reflect_flags::is_class) == bool(true)
+                    reflect_flags::is_reference == bool(true) && reflect_flags::is_class == bool(true)
                 >::type asEObjTypeFlags;
 
                 static const asEObjTypeFlags object_type = asEObjTypeFlags(ObjTypeT);
@@ -1771,7 +1774,7 @@ namespace asdk {
             template<class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)()>::type
             constructor(FuncT func) {
-                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string return_str = flags::is_reference ? (name + "@") : std::string("void");
                 const std::string ctor_str = flags::is_template ? (return_str + " ctor(int& in)") : (return_str + " ctor()");
 
                 typedef type_traits::constructor<flags, T, FuncT, reflect&, void(*)()> ctor_traits;
@@ -1793,7 +1796,7 @@ namespace asdk {
             }
 
             reflect&
-            constructor(int(*)[sizeof(static_cast<T>(T())) == sizeof(T)] = 0) {
+            constructor(ASDK_SFINAE_DEFAULT_FUNCTION_ARG(static_cast<T>(T()))) {
                 typedef typename type_traits::conditional<
                     void(*)(T&, asITypeInfo&),
                     void(*)(T&),
@@ -1806,7 +1809,7 @@ namespace asdk {
             template<class Arg1T, class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T)>::type
             constructor(const std::string& arg1_str, FuncT func) {
-                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string return_str = flags::is_reference ? (name + "@") : std::string("void");
                 const std::string ctor_str = (flags::is_template ? (return_str + " ctor(int&in, ") : (return_str + " ctor(")) + format_function_argument<Arg1T>(arg1_str) + ")";
 
                 typedef type_traits::constructor<flags, T, FuncT, reflect, void(*)(Arg1T)> ctor_traits;
@@ -2167,19 +2170,24 @@ namespace asdk {
             operator_index(const std::string& index_str,
                 const std::string& return_str)
             {
-                typedef 
-                typename 
+                typedef
+                typename
                 type_traits::remove_reference<ReturnT>::type
                 ReturnT_clear;
 
-                typedef 
-                typename
-                type_traits::conditional<
-                    const T&, T&,
-                    type_traits::is_const<ReturnT_clear>::value
-                >::type type;
-                ReturnT(*op_func)(type, IndexT) = &opIndex;
-                return operator_index<IndexT, ReturnT>(index_str, return_str, op_func);
+                struct lambdas {
+                    typedef
+                    typename
+                    type_traits::conditional<
+                        const T&, T&,
+                        type_traits::is_const<ReturnT_clear>::value
+                    >::type type;
+                    static ReturnT opIndex(type that, IndexT index)
+                    {
+                        return that[index];
+                    }
+                };
+                return operator_index<IndexT, ReturnT>(index_str, return_str, &lambdas::opIndex);
             }
 
 #           ifndef BINARY_OPERATOR_DEF
@@ -2742,14 +2750,16 @@ namespace asdk {
 
 
         template<class T
+            , AngelScript::asEObjTypeFlags::type ObjFlag1
             , AngelScript::asEObjTypeFlags::type ObjFlag2
             , AngelScript::asEObjTypeFlags::type ObjFlag3
             , AngelScript::asEObjTypeFlags::type ObjFlag4
+            , AngelScript::asEObjTypeFlags::type ObjFlag5
         >
-        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag2, ObjFlag3, ObjFlag4>
-            : reflect<T, ObjFlag2, ObjFlag3, ObjFlag4, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
+        struct reflect<T, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE, ObjFlag1, ObjFlag2, ObjFlag3, ObjFlag4, ObjFlag5>
+            : reflect<T, ObjFlag1, ObjFlag2, ObjFlag3, ObjFlag4, ObjFlag5, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE>
         {
-            typedef reflect<T, ObjFlag2, ObjFlag3, ObjFlag4, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
+            typedef reflect<T, ObjFlag1, ObjFlag2, ObjFlag3, ObjFlag4, ObjFlag5, AngelScript::asEObjTypeFlags::asOBJ_TEMPLATE> underlying_type;
 
             reflect(const std::string& name, AngelScript::asIScriptEngine& asIScriptEngine
                 , const object_traits& object_traits) : underlying_type(name, asIScriptEngine, object_traits) {}
@@ -2836,13 +2846,13 @@ namespace asdk {
 
 namespace asdk {
 
-    using namespace asdk::reflection;
-    using namespace asdk::exposing;
-    using namespace asdk::algorithm;
     namespace type_traits {
         using namespace asdk::reflection::type_traits;
         using namespace asdk::algorithm::type_traits;
     }
+    using namespace asdk::reflection;
+    using namespace asdk::exposing;
+    using namespace asdk::algorithm;
 }
 
 #undef ASDK_ARG
