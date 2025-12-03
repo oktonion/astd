@@ -1910,7 +1910,7 @@ namespace asdk {
             template<class Arg1T, class Arg2T, class FuncT>
             typename type_traits::constructor<flags, T, FuncT, reflect&, void(*)(Arg1T, Arg2T)>::type
             constructor(const std::string& arg1_str, const std::string& arg2_str, FuncT func) {
-                const std::string return_str = flags::is_reference ? (name + "@") : "void";
+                const std::string return_str = flags::is_reference ? (name + "@") : std::string("void");
                 const std::string ctor_str = (flags::is_template ? (return_str + " ctor(int&in, ") : (return_str + " ctor("))
                     + format_function_argument<Arg1T>(arg1_str) 
                     + ", " 
