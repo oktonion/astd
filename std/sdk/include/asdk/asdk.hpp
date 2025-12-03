@@ -932,6 +932,27 @@ namespace asdk {
             template<>
             struct add_reference<void> { typedef void type; };
 
+            namespace detail {
+                template<class Derived>
+                char is_base_of_tester(void(Derived::*)());
+                template<class Derived>
+                int is_base_of_tester(...);
+            }
+
+            template<class Base, class Derived>
+            struct is_base_of {
+                typedef void(Base::* base_member_function)();
+                typedef void(Derived::* derived_member_function)();
+                static const bool value =
+                    sizeof(detail::is_base_of_tester<Derived>(base_member_function(0))) ==
+                    sizeof(detail::is_base_of_tester<Derived>(derived_member_function(0)));
+            };
+
+            template<class Base, class Derived>
+            struct is_compatible 
+                : conditional<true_type, is_base_of<Base, Derived>,
+                    is_same<Base, Derived>::value == bool(true)>::type
+            { };
 
             template<class T>
             T declval();
@@ -1332,16 +1353,16 @@ namespace asdk {
                     >::type storage4;
 
                     typedef is_compatible_function_args<FuncT, storage1> is_compatible_with1;
-typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
-typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
-typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
-typedef typename conditional<
-    typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
-    is_compatible_with1::value == bool(true)
-    || is_compatible_with2::value == bool(true)
-    || is_compatible_with3::value == bool(true)
-    || is_compatible_with4::value == bool(true)
->::type is_compatible_with;
+                    typedef is_compatible_function_args<FuncT, storage2> is_compatible_with2;
+                    typedef is_compatible_function_args<FuncT, storage3> is_compatible_with3;
+                    typedef is_compatible_function_args<FuncT, storage4> is_compatible_with4;
+                    typedef typename conditional<
+                        typename conditional<true_type, false_type, flags::is_class == bool(true)>::type, false_type,
+                        is_compatible_with1::value == bool(true)
+                        || is_compatible_with2::value == bool(true)
+                        || is_compatible_with3::value == bool(true)
+                        || is_compatible_with4::value == bool(true)
+                    >::type is_compatible_with;
                 };
                 typedef typename cdecl_objlast::is_compatible_with is_compatible_with_cdecl_objlast;
 
@@ -1560,19 +1581,29 @@ typedef typename conditional<
 
                 typedef 
                 typename
+                conditional<
+                    is_same<class_type, void>,
+                    false_type,
+                    is_compatible_with_cdecl_or_thiscall::value == bool(true)
+                >::type is_compatible_with_cdecl;
+
+                typedef 
+                typename
+                conditional<
+                    typename conditional<false_type, is_compatible<class_type, ClassT>,
+                    is_same<class_type, void>::value == bool(true)>::type, false_type,
+                    is_compatible_with_cdecl_or_thiscall::value == bool(true)
+                >::type is_compatible_with_thiscall;
+
+                typedef 
+                typename
                 conditional<ReflectionT, arg_type_ph,
-                    is_compatible_with_cdecl_or_thiscall::value == bool(true) ||
+                    is_compatible_with_cdecl::value == bool(true) ||
+                    is_compatible_with_thiscall::value == bool(true) ||
                     is_compatible_with_cdecl_objlast::value == bool(true) ||
                     is_compatible_with_cdecl_objfirst::value == bool(true)
                 >::type type;
 
-
-
-                typedef 
-                typename
-                conditional<is_same<class_type, void>, false_type,
-                    is_compatible_with_cdecl_or_thiscall::value == bool(true)
-                >::type is_compatible_with_thiscall;
 
                 typedef 
                 typename
