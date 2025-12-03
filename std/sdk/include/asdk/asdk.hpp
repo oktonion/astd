@@ -380,10 +380,10 @@ namespace asdk {
                 struct lambdas
                 {
                     typedef Deleter deleter_type;
-                    typedef asGCReference asGCReference;
+                    typedef asGCReference asGCReference_type;
                     static void deleter_call(void* deleter, void* ptr) {
                         (*reinterpret_cast<deleter_type*>(deleter))(
-                            reinterpret_cast<asGCReference*>(ptr)
+                            reinterpret_cast<asGCReference_type*>(ptr)
                             );
                     }
                     static void deleter_destruct(void* deleter) { delete (reinterpret_cast<deleter_type*>(deleter)); }
