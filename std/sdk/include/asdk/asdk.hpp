@@ -688,6 +688,15 @@ namespace asdk {
                     void* obj_ptr = engine->CreateScriptObject(type.type_info);
                     std::memcpy(memory, &obj_ptr, sizeof(void*));
                 }
+                inline
+                void class_object(const AngelScript::asType& type, void* memory, void *obj) const
+                {
+                    asIScriptEngine* engine = type.type_info->GetEngine();
+                    if (!engine) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">()::class_object: cannot get script engine"));
+
+                    void* obj_ptr = engine->CreateScriptObjectCopy(obj, type.type_info);
+                    std::memcpy(memory, &obj_ptr, sizeof(void*));
+                }
 
                 inline
                 void operator()(const AngelScript::asType& type, void* memory) const
@@ -732,6 +741,62 @@ namespace asdk {
                     else
                     {
                         std::memset(memory, 0, type_size * count);
+                    }
+                }
+
+                inline
+                void operator()(const AngelScript::asType& type, void* memory, const void *value) const
+                {
+                    if (!memory) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">(): null memory location"));
+                    if (!type) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">(): invalid type"));
+                    if (!value) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">(): null value memory location"));
+
+                    const int type_size = type.size();
+                    if (type_size <= 0) throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">(): invalid type::size"));
+
+                    if (type.is_class() && !type.is_handle())
+                    {
+                        if (type_size != sizeof(void*))
+                            throw(std::runtime_error(std::string("astd::construct<") + type.name() + ">(): invalid type::size for script class object != sizeof(void*)"));
+
+                        class_object(type, memory, const_cast<void*>(value));
+                    }
+                    else
+                    {
+                        std::memcpy(memory, value, type_size);
+                    }
+                }
+
+                inline
+                void operator()(const AngelScript::asType& type, void* memory, std::size_t count, const void *value) const
+                {
+                    if (!memory) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">(): null memory location"));
+                    if (!type) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">(): invalid type"));
+                    if (!value) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">(): null value memory location"));
+
+                    const int type_size = type.size();
+                    if (type_size <= 0) throw(std::runtime_error(std::string("astd::construct[]<") + type.name() + ">(): invalid type::size"));
+
+                    unsigned char* memory_ptr = static_cast<unsigned char*>(memory);
+
+                    if (type.is_class() && !type.is_handle())
+                    {
+                        if (type_size != sizeof(void*))
+                            throw(std::runtime_error(std::string("astd::constructp[<") + type.name() + ">(): invalid type::size for script class object != sizeof(void*)"));
+
+                        for (std::size_t i = 0; i < count; ++i)
+                        {
+                            class_object(type, memory_ptr + i * type_size, const_cast<void*>(value));
+                        }
+                        
+                    }
+                    else
+                    {
+                        for (std::size_t i = 0; i < count; ++i)
+                        {
+                            std::memcpy(memory_ptr + i * type_size, value, type_size);
+                        }
+                        
                     }
                 }
             } construct;
